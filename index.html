@@ -31,6 +31,9 @@
   --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:14px;
 }
+[hidden]{display:none!important}
+.ibtn.solve{color:var(--accent);border-color:rgba(255,209,46,.35)}
+.ibtn.solve.arm{background:var(--accent);color:#1b1206;border-color:transparent}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{margin:0;background:var(--ink);color:var(--fg);font-family:var(--font-body);overflow:hidden;
@@ -235,6 +238,9 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
 
 @media (max-width:560px){
   .hud .chips .chip.moves{display:none}
+  .hud{gap:6px;padding:10px 8px}
+  .hud #gSound{display:none} /* effects volume lives in the music panel */
+  .hud .chip{padding:6px 8px}
   .act{min-width:48px;font-size:10px;padding:7px 4px}
   .act svg{width:20px;height:20px}
   .sep{display:none}
@@ -297,6 +303,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
         <div class="chip moves"><em>Züge</em><span id="gMoves">0</span></div>
         <div class="chip"><em>Teile</em><span id="gLeft">0</span></div>
       </div>
+      <button class="ibtn solve" id="gSolve" aria-label="Puzzle auflösen" title="Auflösen" hidden><svg viewBox="0 0 24 24"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M12.2 6.2L11 5"/><path d="M3 21l9-9"/></svg></button>
       <button class="ibtn" id="gMusic" aria-label="Musik"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
       <button class="ibtn" id="gSound" aria-label="Ton an/aus"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg></button>
     </div>
@@ -912,6 +919,8 @@ function startLevel(spec){
   if(spec.mode==='level'){const T=tierOf(spec.L);$('gTitle').textContent='Level '+spec.L;$('gSub').textContent=T.name+' · '+lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color=T.color;}
   else if(spec.mode==='daily'){$('gTitle').textContent='Tägliche Challenge';$('gSub').textContent=new Date().toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});$('gSub').style.color='var(--accent)';}
   else{$('gTitle').textContent='Zufallspuzzle';$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--muted)';}
+  $('gSolve').hidden=spec.mode!=='random';$('gSolve').classList.remove('arm');
+  Lay=null;boardLayer=null; // old layout belongs to the previous board
   updateHud();
   closeOv('winOv');
   show('game');
@@ -997,6 +1006,28 @@ function hint(){
   p.rot=0;p.flip=0;p.placed=true;p.tr=p.solT[0];p.tc=p.solT[1];p.pop=1;p.glow=1;
   G.sel=p.id;G.hints++;G.moves++;pushUndo(snap);SFX.hint();buzz(15);updateHud();checkWin();
 }
+// Auto-solve: only offered in random puzzles. Lays every piece into its solution, one after another.
+function solveAll(){
+  if(!G||G.won||G.spec.mode!=='random')return;
+  const g=G;g.won=true;g.autoSolved=true;g.wonAt=Infinity;g.elapsed=(performance.now()-g.t0)/1000;g.sel=null;g.drag=null;g.press=null;
+  const target=p=>p.base.map(([r,c])=>key(r+p.solT[0],c+p.solT[1])).sort().join(';');
+  const cur=p=>p.placed?cellsOf(p).map(([r,c])=>key(r,c)).sort().join(';'):'';
+  const todo=[];
+  for(const id of g.free){const p=g.pieces[id];if(target(p)!==cur(p)){p.placed=false;todo.push(p);}}
+  updateHud();
+  todo.forEach((p,i)=>setTimeout(()=>{
+    if(G!==g)return;
+    p.rot=0;p.flip=0;p.placed=true;p.tr=p.solT[0];p.tc=p.solT[1];p.pop=1;p.glow=1;SFX.snap(i);updateHud();
+  },350+i*170));
+  const end=350+todo.length*170+450;
+  setTimeout(()=>{if(G!==g)return;g.wonAt=performance.now();SFX.hint();},end);
+  setTimeout(()=>{if(G!==g)return;showWin();},end+1700);
+}
+$('gSolve').onclick=function(){
+  if(!G||G.won)return;
+  if(this.classList.contains('arm')){this.classList.remove('arm');clearTimeout(this._t);solveAll();}
+  else{this.classList.add('arm');toast('Nochmal tippen, um das Puzzle aufzulösen');this._t=setTimeout(()=>this.classList.remove('arm'),3000);}
+};
 $('aUndo').onclick=undo;$('aReset').onclick=resetBoard;$('aHint').onclick=hint;
 $('aRotL').onclick=()=>rotatePiece(G&&(G.drag?G.drag.id:G.sel),-1);
 $('aRotR').onclick=()=>rotatePiece(G&&(G.drag?G.drag.id:G.sel),1);
@@ -1034,6 +1065,12 @@ function showWin(){
   const titles=['Gelöst!','Stark!','Perfekt!'];
   $('winTitle').textContent=titles[stars-1];
   const sp=G.spec;
+  if(G.autoSolved){
+    svgs.forEach(s=>s.classList.remove('on'));
+    $('winTitle').textContent='Aufgelöst';$('winSub').textContent='So passen alle Teile zusammen.';
+    $('winPar').textContent='Automatisch gelöst, daher ohne Sterne.';$('wNext').textContent='Neues Zufallspuzzle';
+    openOv('winOv');return;
+  }
   if(sp.mode==='level'){
     const prev=save.done[sp.L];
     if(!prev||stars>prev.stars||(stars===prev.stars&&t<prev.time))save.done[sp.L]={stars,time:Math.round(t)};
