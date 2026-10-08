@@ -308,6 +308,22 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
 .res.team .tm{font-family:var(--font-body);font-weight:700}
 .res.mem{margin-left:18px;padding:7px 12px;font-size:14px}
 .res.mem .pl{font-size:12px}
+.mp-slot.away{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.04)}
+.mp-slot.away .nm{color:#6b7190}
+.mp-slot.away .dot{opacity:.4;box-shadow:none}
+.mp-slot .tag2.away{color:#8b91ab;background:rgba(255,255,255,.04)}
+.mp-slot{flex-wrap:wrap}
+.mp-slot .nm{min-width:64px}
+.team-pick{display:flex;gap:6px;width:100%;padding-left:24px}
+.team-pick button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:var(--c);opacity:.35;padding:0;flex:none;transition:opacity .15s,transform .15s}
+.team-pick button:hover{opacity:.7}
+.team-pick button.on{opacity:1;border-color:#fff;transform:scale(1.08);box-shadow:0 0 12px var(--c)}
+.team-pill{font-size:11px;font-weight:700;border-radius:8px;padding:2px 8px;color:#10121b;background:var(--c);white-space:nowrap}
+.team-pill.none{background:none;color:#8b91ab;border:1px dashed rgba(255,255,255,.2)}
+.mp-swaps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mp-swaps button{border:1px solid var(--line);background:var(--ink-3);border-radius:12px;padding:10px 4px;font-size:13px;font-weight:700}
+.mp-swaps button.on{border-color:var(--prism-4);color:var(--prism-4);background:color-mix(in srgb,var(--prism-4) 12%,var(--ink-3))}
+.mp-swaps button:disabled{cursor:default}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-10px);opacity:0;z-index:40;background:var(--ink-3);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;transition:all .25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
@@ -406,8 +422,14 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
             <h3>Modus</h3>
             <div class="mp-modes" id="mpModes">
               <button data-m="race"><b>Rennen</b><span>Alle bekommen dasselbe Rätsel. Die schnellste Zeit gewinnt.</span></button>
-              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Alle 2 Minuten wandern die Bretter weiter und die Teile fallen raus. Wer 3 gelöste Rätsel Vorsprung hat, gewinnt.</span></button>
-              <button data-m="team"><b>Team-Roulette</b><span>Wie Roulette, aber in zwei Teams. Die gelösten Rätsel werden pro Team zusammengezählt. Nur mit gerader Spielerzahl.</span></button>
+              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Nach einer einstellbaren Zeit wandern die Bretter weiter und die Teile fallen raus. Wer 3 gelöste Rätsel Vorsprung hat, gewinnt.</span></button>
+              <button data-m="team"><b>Team-Roulette</b><span>Wie Roulette, aber in Teams. Jeder wählt neben seinem Namen eines von 6 Teams. Die gelösten Rätsel werden pro Team zusammengezählt.</span></button>
+            </div>
+            <div id="mpSwapBox" hidden style="display:grid;gap:10px">
+              <h3>Brettwechsel alle</h3>
+              <div class="mp-swaps" id="mpSwaps">
+                <button data-s="60000">1 Min</button><button data-s="120000">2 Min</button><button data-s="180000">3 Min</button><button data-s="300000">5 Min</button>
+              </div>
             </div>
             <h3>Schwierigkeit</h3>
             <div class="mp-diffs" id="mpDiffs">
@@ -1004,6 +1026,8 @@ let current='menu';
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
   current=id;
+  // tell the lobby where I am: in the lobby, in a game, or somewhere else in the app
+  if(typeof MP!=='undefined'&&MP.R){const at=id==='mp'?'lobby':(id==='game'&&G&&(G.spec.mode==='race'||G.spec.mode==='roul')?'game':'away');if(MP.mine.at!==at)mpSet({at});}
   if(id==='menu'){refreshMenu();startHero();}else stopHero();
   if(id==='levels')renderLevels();
   if(id==='game'){requestAnimationFrame(()=>{layout();});}
@@ -1423,7 +1447,7 @@ function frame(now){
   if(current==='menu')drawHero(now,dt);
   if(current!=='game'||!G||!Lay||!boardLayer)return;
   if(G.spec.mode==='roul'&&MP.roul&&MP.roul.start&&!MP.roul.ended){ // roulette: time left until the boards move on
-    const rem=Math.ceil((SWAP-(now-MP.roul.start)%SWAP)/1000);const tt=fmt(rem);
+    const rem=Math.ceil((MP.roul.swap-(now-MP.roul.start)%MP.roul.swap)/1000);const tt=fmt(rem);
     if($('gTime').textContent!==tt){$('gTime').textContent=tt;$('gTime').classList.toggle('warn',rem<=10);}
   }else if(!G.won&&!G.locked&&G.spec.mode!=='roul'){const el=(now-G.t0)/1000;const tt=fmt(el);if($('gTime').textContent!==tt)$('gTime').textContent=tt;}
   const k=1-Math.pow(1-0.24,dt/16.7),kd=1-Math.pow(1-0.55,dt/16.7);
@@ -1703,7 +1727,7 @@ async function mpEnter(code,create){
   MP.R=R;MP.named=named;MP.code=code;MP.results={};MP.seenDone=new Set();
   MP.lastRound=create?0:null;
   MP.mine={};
-  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',hr:0,diff:0.42,md:'race',seed:0,rd:0,pl:0,tot:0,ms:null,mv:0,sv:[]});
+  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',at:'lobby',hr:0,diff:0.42,md:'race',sw:120000,team:teamOk(save.team)?save.team:null,seed:0,rd:0,pl:0,tot:0,ms:null,mv:0,sv:[]});
   MP.unsub=R.onPeers(mpOnPeers,()=>{toast('Verbindung zur Lobby verloren');mpLeave();});
   MP.unconn=R.onConnection?R.onConnection(()=>renderMp()):null;
   $('mpCreate').disabled=$('mpJoinBtn').disabled=false;
@@ -1748,7 +1772,7 @@ function mpOnPeers(){
   if(host&&host.presence){
     const hp=host.presence;const hr=mpNum(hp.hr,0);
     if(MP.lastRound===null){if(!host.sameTab)MP.lastRound=hr;} // joined: skip a round already under way, wait for the next
-    else if(hr>MP.lastRound&&hp.seed){mpBegin(hr,hp.seed,mpNum(hp.diff,0.42),hp.md==='roul'||hp.md==='team'?hp.md:'race',Array.isArray(hp.ro)?hp.ro:[],Array.isArray(hp.tm)?hp.tm:null);}
+    else if(hr>MP.lastRound&&hp.seed){mpBegin(hr,hp.seed,mpNum(hp.diff,0.42),hp.md==='roul'||hp.md==='team'?hp.md:'race',Array.isArray(hp.ro)?hp.ro:[],Array.isArray(hp.tm)?hp.tm:null,mpNum(hp.sw,120000));}
     if(MP.roul&&!MP.roul.ended&&mpNum(hp.rend,0)===MP.roul.round)roulEnd();
   }
   renderMp();renderRaceBar();
@@ -1765,9 +1789,9 @@ function runCountdown(onGo){
     if(i===3){g.locked=false;g.t0=performance.now();if(onGo)onGo();setTimeout(()=>{if(G===g)cd.innerHTML='';},800);}
   },i*800));
 }
-function mpBegin(round,seed,t,md,order,teams){
+function mpBegin(round,seed,t,md,order,teams,swap){
   MP.lastRound=round;
-  if(md==='roul'||md==='team'){roulBegin(round,seed,t,order||[],md==='team'?teams:null);return;}
+  if(md==='roul'||md==='team'){roulBegin(round,seed,t,order||[],md==='team'?teams:null,swap);return;}
   roulStop();
   closeOv('raceOv');closeOv('winOv');MP.resMode='race';
   startLevel({mode:'race',seed:seed|0,t,round});
@@ -1784,19 +1808,27 @@ function mpStartRound(){
   const order=mpPeers().slice(0,MPMAX).map(p=>p.peer);
   let teams=null;
   if(md==='team'){
-    if(order.length<2||order.length%2){toast('Team-Roulette braucht eine gerade Spielerzahl');return;}
-    // random, even split: shuffle the seats, first half Team 1, second half Team 2
-    const seats=shuffle([...order.keys()],mulberry32(seed));teams=order.map(()=>0);
-    seats.forEach((s,i)=>{teams[s]=i<order.length/2?0:1;});
+    // everyone picked a team in the lobby
+    const chk=mpTeamCheck();if(chk){toast(chk);return;}
+    teams=mpPeers().slice(0,MPMAX).map(p=>p.presence.team);
   }
-  mpSet({hr:round,seed,ro:order,tm:teams,rend:0});
-  mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order,teams);
+  const sw=mpNum(MP.mine.sw,120000);
+  mpSet({hr:round,seed,ro:order,tm:teams,sw,rend:0});
+  mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order,teams,sw);
 }
 function mpFinished(){
   const ms=Math.round(G.elapsed*1000);
   mpSet({st:'done',ms,pl:G.free.length,mv:G.moves});
   const rd=G.spec.round;(MP.results[rd]||(MP.results[rd]={}))['__me']={nick:MP.mine.nick,ms,mv:G.moves,me:true};
   MP.resMode='race';renderRaceResults();openOv('raceOv');
+}
+// what still blocks a team start (null = ready)
+function mpTeamCheck(){
+  const ps=mpPeers().slice(0,MPMAX);
+  const missing=ps.filter(p=>!teamOk(p.presence.team));
+  if(missing.length)return missing.length===1?(missing[0].sameTab?'Wähle zuerst dein Team.':mpStr(missing[0].presence.nick,'Ein Spieler')+' hat noch kein Team gewählt.'):missing.length+' Spieler haben noch kein Team gewählt.';
+  if(new Set(ps.map(p=>p.presence.team)).size<2)return 'Es braucht mindestens 2 verschiedene Teams.';
+  return null;
 }
 function mpWins(){
   const w={};
@@ -1874,14 +1906,33 @@ function renderMp(){
   const ps=mpPeers().slice(0,MPMAX);const wins=mpWins();const host=mpIsHost();
   $('mpCount').textContent='Spieler '+ps.length+'/'+MPMAX;
   const slots=$('mpSlots');slots.innerHTML='';
+  const hostMd=ps[0]&&(ps[0].presence.md==='roul'||ps[0].presence.md==='team')?ps[0].presence.md:'race';
   ps.forEach((p,i)=>{
-    const pr=p.presence;const d=document.createElement('div');d.className='mp-slot';
+    const pr=p.presence;const d=document.createElement('div');
+    const playing=pr.st==='race'||pr.st==='roul';const away=!playing&&pr.at&&pr.at!=='lobby';
+    d.className='mp-slot'+(playing||away?' away':'');
     const dot=document.createElement('i');dot.className='dot';dot.style.background=dot.style.color=MPCOLS[i%MPCOLS.length];
     const nm=document.createElement('span');nm.className='nm';nm.textContent=mpStr(pr.nick,'Spieler')+(p.sameTab?' (du)':'');
     d.append(dot,nm);
     const w=wins[p.sameTab?'__me':p.peer];if(w){const ws=document.createElement('span');ws.className='wins';ws.textContent='🏆 '+w;d.append(ws);}
-    if(pr.st==='race'||pr.st==='roul'){const t=document.createElement('span');t.className='tag2';t.textContent='spielt';d.append(t);}
+    if(playing){const t=document.createElement('span');t.className='tag2 away';t.textContent='im Spiel';d.append(t);}
+    else if(away){const t=document.createElement('span');t.className='tag2 away';t.textContent='abwesend';d.append(t);}
     if(i===0){const t=document.createElement('span');t.className='tag2 host';t.textContent='Host';d.append(t);}
+    if(hostMd==='team'){
+      dot.style.background=dot.style.color=teamOk(pr.team)?TEAMS[pr.team].col:'#4a4f68';
+      if(p.sameTab){
+        const pick=document.createElement('div');pick.className='team-pick';
+        TEAMS.forEach((T,ti)=>{const b=document.createElement('button');b.style.setProperty('--c',T.col);b.title='Team '+T.name;b.setAttribute('aria-label','Team '+T.name);
+          if(pr.team===ti)b.className='on';
+          b.onclick=()=>{save.team=ti;persist();mpSet({team:ti});renderMp();};pick.appendChild(b);});
+        d.append(pick);
+      }else{
+        const pill=document.createElement('span');
+        if(teamOk(pr.team)){pill.className='team-pill';pill.style.setProperty('--c',TEAMS[pr.team].col);pill.textContent=TEAMS[pr.team].name;}
+        else{pill.className='team-pill none';pill.textContent='kein Team';}
+        d.insertBefore(pill,nm.nextSibling);
+      }
+    }
     slots.appendChild(d);
   });
   if(ps.length<MPMAX){const d=document.createElement('div');d.className='mp-slot empty';const f=MPMAX-ps.length;d.textContent=f===1?'Noch 1 Platz frei':'Noch '+f+' Plätze frei';slots.appendChild(d);}
@@ -1890,10 +1941,12 @@ function renderMp(){
   const md=hostP&&(hostP.presence.md==='roul'||hostP.presence.md==='team')?hostP.presence.md:'race';
   document.querySelectorAll('#mpModes button').forEach(b=>{b.classList.toggle('on',b.dataset.m===md);b.disabled=!host;});
   $('mpStart').textContent=md==='team'?'Team-Roulette starten':md==='roul'?'Roulette starten':'Rennen starten';
-  const odd=md==='team'&&(ps.length<2||ps.length%2===1);
-  $('mpTeamHint').hidden=!odd;
-  $('mpTeamHint').textContent=ps.length<2?'Team-Roulette braucht mindestens 2 Spieler.':'Team-Roulette braucht eine gerade Spielerzahl (2, 4, 6 …). Aktuell sind es '+ps.length+'.';
-  $('mpStart').disabled=odd;
+  const block=md==='team'?mpTeamCheck():null;
+  $('mpTeamHint').hidden=!block;$('mpTeamHint').textContent=block||'';
+  $('mpStart').disabled=!!block;
+  $('mpSwapBox').hidden=md==='race';
+  const sw=hostP?mpNum(hostP.presence.sw,120000):120000;
+  document.querySelectorAll('#mpSwaps button').forEach(b=>{b.classList.toggle('on',+b.dataset.s===sw);b.disabled=!host;});
   $('mpStart').hidden=!host;$('mpWait').hidden=host;
 }
 
@@ -1905,10 +1958,11 @@ const SWAP=window.__HX_SWAP||120000; // 2 minutes
 const LEAD=3; // a lead of 3 solved boards over the runner-up wins the roulette
 function roulSeed(base,slot,gen){return ((Math.imul(base|0,31)+slot*1000003+gen*1299709)>>>0)%999999937+1;}
 function roulGen(round,slot){let n=0;const pre=round+':'+slot+':';for(const k of MP.roulSv)if(k.startsWith(pre))n++;return n;}
-const TEAMS=[{name:'Gelb',col:'#ffd12e'},{name:'Blau',col:'#2fb8ff'}];
+const TEAMS=[{name:'Gelb',col:'#ffd12e'},{name:'Blau',col:'#2fb8ff'},{name:'Rot',col:'#ff4d5e'},{name:'Grün',col:'#39e27d'},{name:'Lila',col:'#b04dff'},{name:'Orange',col:'#ff8a2a'}];
+const teamOk=v=>Number.isInteger(v)&&v>=0&&v<TEAMS.length;
 function roulTeamOf(R,key){if(!R||!R.teams)return null;const peer=key==='__me'?R.myPeer:key;const i=R.order.indexOf(peer);return i<0?null:R.teams[i];}
 function roulTeamSums(){
-  const R=MP.roul;const sums=[{n:0,mv:0,members:[]},{n:0,mv:0,members:[]}];
+  const R=MP.roul;const sums=TEAMS.map((_,i)=>({t:i,n:0,mv:0,members:[],active:!!(R&&R.teams&&R.teams.includes(i))}));
   for(const r of roulRows()){const t=roulTeamOf(R,r.key);if(t==null)continue;sums[t].n+=r.n;sums[t].mv+=r.mv;sums[t].members.push(r);}
   return sums;
 }
@@ -1928,9 +1982,11 @@ function roulCollect(ps){
 function roulCheckLead(){
   const R=MP.roul;if(!R||R.ended||!R.start)return;
   if(R.teams){ // team roulette: the summed scores decide
-    const [a,b]=roulTeamSums();const lead=Math.abs(a.n-b.n);const top=a.n>=b.n?0:1;
+    const ranked=roulTeamSums().filter(x=>x.active).sort((x,y)=>(y.n-x.n)||(x.mv-y.mv));
+    if(ranked.length<2)return;
+    const lead=ranked[0].n-ranked[1].n;const top=ranked[0].t;const sig=top+':'+ranked.map(x=>x.n).join(',');
     if(lead>=LEAD){R.leadWin=true;if(mpIsHost())mpSet({rend:R.round});roulEnd();}
-    else if(lead===LEAD-1&&R.warnedLead!==top+':'+a.n+':'+b.n){R.warnedLead=top+':'+a.n+':'+b.n;
+    else if(lead===LEAD-1&&R.warnedLead!==sig){R.warnedLead=sig;
       toast(top===R.myTeam?'Noch 1 Rätsel, dann gewinnt dein Team!':'Team '+TEAMS[top].name+' fehlt nur noch 1 Rätsel!');}
     return;
   }
@@ -1945,15 +2001,16 @@ function roulCheckLead(){
     toast(rows[0].me?'Noch 1 Rätsel, dann hast du gewonnen!':rows[0].nick+' fehlt nur noch 1 Rätsel zum Sieg!');
   }
 }
-function roulBegin(round,base,t,order,teams){
+function roulBegin(round,base,t,order,teams,swap){
   roulStop();
   const me=(MP.R?MP.R.peers():[]).find(p=>p.sameTab);
   const idx=me?order.indexOf(me.peer):-1;
   if(idx<0){toast('Roulette läuft schon. Du bist in der nächsten Runde dabei.');return;}
   closeOv('raceOv');closeOv('winOv');MP.resMode='roul';
   MP.roulScore={};
-  const tms=Array.isArray(teams)&&teams.length===order.length?teams.map(x=>x===1?1:0):null;
+  const tms=Array.isArray(teams)&&teams.length===order.length?teams.map(x=>teamOk(x)?x:0):null;
   const R=MP.roul={round,base,t,order,n:order.length,idx,epoch:0,start:0,moves:0,solved:[],ended:false,warned:-1,ticked:-1,
+    swap:Math.max(20000,Math.min(600000,swap||SWAP)),
     teams:tms,myPeer:me.peer,myTeam:tms?tms[idx]:null};
   if(tms)setTimeout(()=>toast('Du bist in Team '+TEAMS[R.myTeam].name+'!'),300);
   mpSet({st:'roul',rd:round,sv:[],mv:0,pl:0,tot:0,ms:null});
@@ -1970,7 +2027,7 @@ function roulLoad(){
 }
 function roulTick(){
   const R=MP.roul;if(!R||R.ended||!R.start)return;
-  const el=performance.now()-R.start;const e=Math.floor(el/SWAP);const rem=SWAP-el%SWAP;
+  const el=performance.now()-R.start;const e=Math.floor(el/R.swap);const rem=R.swap-el%R.swap;
   if(rem<10500&&R.warned!==e){R.warned=e;toast('Wechsel in 10 Sekunden!');}
   const sec=Math.ceil(rem/1000);
   if(sec<=3&&R.ticked!==e*10+sec){R.ticked=e*10+sec;tone(660,.08,'square',.05);}
@@ -2005,9 +2062,9 @@ function roulEnd(){
   const rows=roulRows();
   let iWon=false;
   if(R.teams){
-    const [a,b]=roulTeamSums();
-    if(a.n!==b.n||a.mv!==b.mv){const w=(a.n>b.n||(a.n===b.n&&a.mv<b.mv))?0:1;R.winTeam=w;
-      MP.roulWins[R.round]=[a,b][w].members.map(m=>m.key);iWon=w===R.myTeam;}
+    const ranked=roulTeamSums().filter(x=>x.active).sort((x,y)=>(y.n-x.n)||(x.mv-y.mv));
+    if(ranked.length&&(ranked.length<2||ranked[0].n!==ranked[1].n||ranked[0].mv!==ranked[1].mv)){
+      const w=ranked[0].t;R.winTeam=w;MP.roulWins[R.round]=ranked[0].members.map(m=>m.key);iWon=w===R.myTeam;}
   }else{
     if(rows.length&&rows[0].n>0)MP.roulWins[R.round]=rows[0].key;
     iWon=!!(rows[0]&&rows[0].me&&rows[0].n>0);
@@ -2023,7 +2080,7 @@ function renderRoulResults(){
   const list=$('raceList');list.innerHTML='';
   if(R.teams){
     const sums=roulTeamSums();
-    const order=[0,1].sort((x,y)=>(sums[y].n-sums[x].n)||(sums[x].mv-sums[y].mv));
+    const order=sums.filter(x=>x.active).sort((x,y)=>(y.n-x.n)||(x.mv-y.mv)).map(x=>x.t);
     order.forEach((t,i)=>{
       const tm=sums[t];
       const d=document.createElement('div');d.className='res team';d.style.setProperty('--tc',TEAMS[t].col);
@@ -2065,7 +2122,7 @@ function renderRoulBar(){
   const bar=$('raceBar');const R=MP.roul;bar.hidden=false;bar.innerHTML='';
   if(R.teams){
     const sums=roulTeamSums();
-    [0,1].forEach(t=>{const c=document.createElement('div');c.className='rc team';c.style.borderColor=TEAMS[t].col;
+    sums.filter(x=>x.active).sort((x,y)=>y.n-x.n).map(x=>x.t).forEach(t=>{const c=document.createElement('div');c.className='rc team';c.style.borderColor=TEAMS[t].col;
       const nm=document.createElement('span');nm.textContent='Team '+TEAMS[t].name+(t===R.myTeam?' (du)':'');nm.style.color=TEAMS[t].col;
       const sc=document.createElement('span');sc.className='sc';sc.textContent='★'+sums[t].n;c.append(nm,sc);bar.appendChild(c);});
   }
@@ -2103,6 +2160,7 @@ $('mpCopy').onclick=()=>{
 };
 document.querySelectorAll('#mpModes button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({md:b.dataset.m});renderMp();}});
 
+document.querySelectorAll('#mpSwaps button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({sw:+b.dataset.s});renderMp();}});
 document.querySelectorAll('#mpDiffs button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({diff:+b.dataset.d});renderMp();}});
 $('mpStart').onclick=()=>{ac();mpStartRound();};
 $('raceNext').onclick=()=>mpStartRound();
