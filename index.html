@@ -397,7 +397,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
             <h3>Modus</h3>
             <div class="mp-modes" id="mpModes">
               <button data-m="race"><b>Rennen</b><span>Alle bekommen dasselbe Rätsel. Die schnellste Zeit gewinnt.</span></button>
-              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Alle 2 Minuten wandern die Bretter weiter und die Teile fallen raus. Die meisten gelösten Rätsel gewinnen.</span></button>
+              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Alle 2 Minuten wandern die Bretter weiter und die Teile fallen raus. Wer 3 gelöste Rätsel Vorsprung hat, gewinnt.</span></button>
             </div>
             <h3>Schwierigkeit</h3>
             <div class="mp-diffs" id="mpDiffs">
@@ -1880,6 +1880,7 @@ function renderMp(){
    so nobody has to send whole boards around: player i plays slot (i + epoch) mod n.
    Solving a board bumps that slot's generation (everyone counts solves from presence). ---------- */
 const SWAP=window.__HX_SWAP||120000; // 2 minutes
+const LEAD=3; // a lead of 3 solved boards over the runner-up wins the roulette
 function roulSeed(base,slot,gen){return ((Math.imul(base|0,31)+slot*1000003+gen*1299709)>>>0)%999999937+1;}
 function roulGen(round,slot){let n=0;const pre=round+':'+slot+':';for(const k of MP.roulSv)if(k.startsWith(pre))n++;return n;}
 function roulCollect(ps){
@@ -1892,6 +1893,20 @@ function roulCollect(ps){
     const prev=MP.roulScore[key];
     MP.roulScore[key]={nick:mpStr(pr.nick,'Spieler'),n:pr.sv.length,mv:mpNum(pr.mv,0),me:!!p.sameTab,col:mpColor(p)};
     if(!p.sameTab&&prev&&pr.sv.length>prev.n&&!R.ended)toast(mpStr(pr.nick,'Jemand')+' hat ein Brett gelöst (★ '+pr.sv.length+')');
+  }
+  roulCheckLead();
+}
+function roulCheckLead(){
+  const R=MP.roul;if(!R||R.ended||!R.start)return;
+  const rows=roulRows();if(!rows.length)return;
+  const lead=rows[0].n-(rows[1]?rows[1].n:0);
+  if(lead>=LEAD){
+    R.leadWin=true;
+    if(mpIsHost())mpSet({rend:R.round});
+    roulEnd();
+  }else if(lead===LEAD-1&&rows[0].n>0&&R.warnedLead!==rows[0].key+rows[0].n){
+    R.warnedLead=rows[0].key+rows[0].n;
+    toast(rows[0].me?'Noch 1 Rätsel, dann hast du gewonnen!':rows[0].nick+' fehlt nur noch 1 Rätsel zum Sieg!');
   }
 }
 function roulBegin(round,base,t,order){
@@ -1931,7 +1946,9 @@ function roulSolved(){
   R.moves+=G.moves;
   const k=R.slot+':'+R.gen;R.solved.push(k);MP.roulSv.add(R.round+':'+k);
   mpSet({sv:R.solved.slice(),mv:R.moves});
+  MP.roulScore['__me']={...(MP.roulScore['__me']||{}),nick:MP.mine.nick,n:R.solved.length,mv:R.moves,me:true,col:MP.roulScore['__me']?MP.roulScore['__me'].col:MPCOLS[0]};
   toast('Gelöst! ★ '+R.solved.length+' · nächstes Brett kommt');
+  roulCheckLead();if(R.ended)return;
   const g=G;
   setTimeout(()=>{if(MP.roul===R&&!R.ended&&G===g)roulLoad();},1300);
 }
@@ -1968,7 +1985,7 @@ function renderRoulResults(){
   });
   const my=rows.findIndex(r=>r.me);
   $('raceTitle').textContent=my===0&&rows[0].n>0?'Gewonnen! 🏆':'Platz '+(my+1);
-  $('raceSub').textContent='Roulette · Runde '+(R.round||'')+' · bei Gleichstand zählen weniger Züge';
+  $('raceSub').textContent='Roulette · Runde '+(R.round||'')+(R.leadWin?' · Sieg mit '+LEAD+' Rätseln Vorsprung':' · bei Gleichstand zählen weniger Züge');
   $('raceNext').hidden=!mpIsHost();$('raceNext').textContent='Neue Runde starten';
 }
 function renderRoulBar(){
