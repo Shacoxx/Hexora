@@ -288,6 +288,17 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
 .res .who .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .res .tm{font-variant-numeric:tabular-nums;font-size:14px}
 .res .tm.run{color:var(--muted);font-weight:500;font-size:13px}
+.mp-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mp-modes button{text-align:left;border:1px solid var(--line);background:var(--ink-3);border-radius:14px;padding:12px;display:grid;gap:4px}
+.mp-modes b{font-family:var(--font-display);font-size:14px;letter-spacing:.02em}
+.mp-modes span{font-size:12px;color:var(--muted);line-height:1.4;font-weight:500}
+.mp-modes button.on{border-color:var(--accent);background:rgba(255,209,46,.07)}
+.mp-modes button.on b{color:var(--accent)}
+.mp-modes button:disabled{cursor:default}
+.rc .sc{color:var(--accent);font-variant-numeric:tabular-nums}
+.rc .mv{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.rc-end{flex:none;border:1px solid rgba(255,77,94,.4);background:rgba(255,77,94,.1);color:var(--fg);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:700}
+#gTime.warn{color:var(--prism-3)}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-10px);opacity:0;z-index:40;background:var(--ink-3);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;transition:all .25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
@@ -383,6 +394,11 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
             <div class="mp-slots" id="mpSlots"></div>
           </div>
           <div class="mp-card">
+            <h3>Modus</h3>
+            <div class="mp-modes" id="mpModes">
+              <button data-m="race"><b>Rennen</b><span>Alle bekommen dasselbe Rätsel. Die schnellste Zeit gewinnt.</span></button>
+              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Alle 2 Minuten wandern die Bretter weiter und die Teile fallen raus. Die meisten gelösten Rätsel gewinnen.</span></button>
+            </div>
             <h3>Schwierigkeit</h3>
             <div class="mp-diffs" id="mpDiffs">
               <button data-d="0.12" style="--c:var(--prism-1)">Leicht</button>
@@ -391,7 +407,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
               <button data-d="1" style="--c:var(--prism-5)">Genie</button>
             </div>
             <button class="btn primary" id="mpStart" style="justify-content:center">Rennen starten</button>
-            <p id="mpWait" hidden style="text-align:center">Warte, bis der Host das Rennen startet …</p>
+            <p id="mpWait" hidden style="text-align:center">Warte, bis der Host startet …</p>
           </div>
           <button class="btn" id="mpLeave" style="justify-content:center">Lobby verlassen</button>
         </div>
@@ -1038,9 +1054,11 @@ function startLevel(spec){
      undo:[],moves:0,hints:0,t0:performance.now(),won:false,wonAt:0,hover:null,elapsed:0};
   if(spec.mode==='level'){const T=tierOf(spec.L);$('gTitle').textContent='Level '+spec.L;$('gSub').textContent=T.name+' · '+lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color=T.color;}
   else if(spec.mode==='daily'){$('gTitle').textContent='Tägliche Challenge';$('gSub').textContent=new Date().toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});$('gSub').style.color='var(--accent)';}
+  else if(spec.mode==='roul'){$('gTitle').textContent='Roulette · Brett '+(spec.slot+1);$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--prism-4)';}
   else if(spec.mode==='race'){$('gTitle').textContent='Rennen · Runde '+spec.round;$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--prism-3)';}
   else{$('gTitle').textContent='Zufallspuzzle';$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--muted)';}
-  $('aHint').hidden=spec.mode==='race';$('raceBar').hidden=spec.mode!=='race';$('countdown').innerHTML='';
+  const mpMode=spec.mode==='race'||spec.mode==='roul';
+  $('aHint').hidden=mpMode;$('raceBar').hidden=!mpMode;$('gTime').classList.remove('warn');$('countdown').innerHTML='';
   $('gSolve').hidden=spec.mode!=='random';$('gSolve').classList.remove('arm');
   Lay=null;boardLayer=null; // old layout belongs to the previous board
   updateHud();
@@ -1082,7 +1100,7 @@ function updateHud(){
   const left=G.free.filter(id=>!G.pieces[id].placed).length;
   $('gLeft').textContent=left;$('gMoves').textContent=G.moves;
   $('hintCnt').textContent=G.hints?('·'+G.hints):'';
-  if(G.spec.mode==='race'&&typeof mpProgress==='function')mpProgress(G.free.length-left,G.free.length);
+  if((G.spec.mode==='race'||G.spec.mode==='roul')&&typeof mpProgress==='function')mpProgress(G.free.length-left,G.free.length,G.moves);
 }
 
 /* ---------- actions ---------- */
@@ -1117,7 +1135,7 @@ function resetBoard(){
   if(any){pushUndo(s);SFX.drop();}updateHud();
 }
 function hint(){
-  if(!G||G.won||G.spec.mode==='race')return;
+  if(!G||G.won||G.spec.mode==='race'||G.spec.mode==='roul')return;
   const solKey=p=>p.base.map(([r,c])=>key(r+p.solT[0],c+p.solT[1])).sort().join(';');
   const curKey=p=>p.placed?cellsOf(p).map(([r,c])=>key(r,c)).sort().join(';'):'';
   const wrong=G.free.map(id=>G.pieces[id]).filter(p=>solKey(p)!==curKey(p));
@@ -1165,7 +1183,7 @@ document.addEventListener('keydown',e=>{
   if(k==='r'||e.key==='ArrowRight'){rotatePiece(id,e.shiftKey?-1:1);e.preventDefault();}
   else if(k==='e'||e.key==='ArrowLeft'){rotatePiece(id,-1);e.preventDefault();}
   else if(k==='f'){flipPiece(id);}
-  else if(k==='h'&&G.spec.mode!=='race'){hint();}
+  else if(k==='h'&&G.spec.mode!=='race'&&G.spec.mode!=='roul'){hint();}
   else if(e.key==='Escape'){$('gBack').click();}
 });
 
@@ -1180,6 +1198,7 @@ function checkWin(){
 function showWin(){
   if(!G)return;
   if(G.spec.mode==='race'){mpFinished();return;}
+  if(G.spec.mode==='roul'){roulSolved();return;}
   const t=G.elapsed,par=G.lvl.par;
   let stars=1;
   if(G.hints===0&&t<=par)stars=3;else if(G.hints<=1&&t<=par*2.5)stars=2;
@@ -1349,7 +1368,10 @@ function frame(now){
   const dt=Math.min(50,now-last);last=now;
   if(current==='menu')drawHero(now,dt);
   if(current!=='game'||!G||!Lay||!boardLayer)return;
-  if(!G.won&&!G.locked){const el=(now-G.t0)/1000;const tt=fmt(el);if($('gTime').textContent!==tt)$('gTime').textContent=tt;}
+  if(G.spec.mode==='roul'&&MP.roul&&MP.roul.start&&!MP.roul.ended){ // roulette: time left until the boards move on
+    const rem=Math.ceil((SWAP-(now-MP.roul.start)%SWAP)/1000);const tt=fmt(rem);
+    if($('gTime').textContent!==tt){$('gTime').textContent=tt;$('gTime').classList.toggle('warn',rem<=10);}
+  }else if(!G.won&&!G.locked&&G.spec.mode!=='roul'){const el=(now-G.t0)/1000;const tt=fmt(el);if($('gTime').textContent!==tt)$('gTime').textContent=tt;}
   const k=1-Math.pow(1-0.24,dt/16.7),kd=1-Math.pow(1-0.55,dt/16.7);
   ctx.setTransform(Lay.dpr,0,0,Lay.dpr,0,0);
   ctx.clearRect(0,0,Lay.W,Lay.H);
@@ -1498,8 +1520,8 @@ new ResizeObserver(()=>{if(current==='menu'){hero=null;buildHero();}}).observe(h
 
 // remember where the player came from, so "back" returns there
 const _start=startLevel;
-startLevel=function(spec){lastMenu=spec.mode==='race'?'mp':(current==='levels'?'levels':(current==='game'?lastMenu:'menu'));_start(spec);};
-$('gBack').onclick=()=>{const race=G&&G.spec.mode==='race';G=null;if(race&&typeof mpLeaveRace==='function')mpLeaveRace();show(lastMenu);};
+startLevel=function(spec){lastMenu=(spec.mode==='race'||spec.mode==='roul')?'mp':(current==='levels'?'levels':(current==='game'?lastMenu:'menu'));_start(spec);};
+$('gBack').onclick=()=>{const race=G&&(G.spec.mode==='race'||G.spec.mode==='roul');G=null;if(race&&typeof mpLeaveRace==='function')mpLeaveRace();show(lastMenu);};
 
 /* =====================================================================
    MUSIC
@@ -1592,7 +1614,7 @@ renderMusic();
    ===================================================================== */
 const MPMAX=5;
 const MPCOLS=['#39e27d','#ffd12e','#ff4d5e','#b04dff','#2fb8ff'];
-const MP={ns:null,ready:false,R:null,code:null,mine:{},lastRound:null,results:{},seenDone:new Set(),unsub:null,unconn:null,named:false};
+const MP={roul:null,roulSv:new Set(),roulScore:{},roulWins:{},resMode:'race',ns:null,ready:false,R:null,code:null,mine:{},lastRound:null,results:{},seenDone:new Set(),unsub:null,unconn:null,named:false};
 const mpNum=(v,d)=>typeof v==='number'&&isFinite(v)?v:d;
 const mpStr=(v,d)=>typeof v==='string'?v.slice(0,14):d;
 if(!save.nick){save.nick='Spieler '+(10+Math.floor(Math.random()*90));persist();}
@@ -1626,7 +1648,7 @@ async function mpEnter(code,create){
   MP.R=R;MP.named=named;MP.code=code;MP.results={};MP.seenDone=new Set();
   MP.lastRound=create?0:null;
   MP.mine={};
-  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',hr:0,diff:0.42,seed:0,rd:0,pl:0,tot:0,ms:null});
+  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',hr:0,diff:0.42,md:'race',seed:0,rd:0,pl:0,tot:0,ms:null,mv:0,sv:[]});
   MP.unsub=R.onPeers(mpOnPeers,()=>{toast('Verbindung zur Lobby verloren');mpLeave();});
   MP.unconn=R.onConnection?R.onConnection(()=>renderMp()):null;
   $('mpCreate').disabled=$('mpJoinBtn').disabled=false;
@@ -1641,12 +1663,17 @@ async function mpEnter(code,create){
 function mpLeave(){
   try{if(MP.unsub)MP.unsub();if(MP.unconn)MP.unconn();}catch(e){}
   if(MP.R){if(MP.named)MP.R.leave().catch(()=>{});else MP.R.presence({lobby:null,st:null}).catch(()=>{});}
+  roulStop();
   MP.R=null;MP.code=null;MP.unsub=MP.unconn=null;MP.mine={};
   closeOv('raceOv');
   renderMp();
 }
-function mpLeaveRace(){if(MP.R)mpSet({st:'lobby'});closeOv('raceOv');renderMp();}
-function mpProgress(pl,tot){if(!MP.R)return;if(MP.mine.pl!==pl||MP.mine.tot!==tot)mpSet({pl,tot});}
+function mpLeaveRace(){roulStop();if(MP.R)mpSet({st:'lobby'});closeOv('raceOv');renderMp();}
+function mpProgress(pl,tot,mv){
+  if(!MP.R)return;
+  if(MP.roul&&G&&G.spec.mode==='roul')mv=MP.roul.moves+mv;
+  if(MP.mine.pl!==pl||MP.mine.tot!==tot||MP.mine.mv!==mv)mpSet({pl,tot,mv});
+}
 
 function mpOnPeers(){
   if(!MP.R)return;
@@ -1655,50 +1682,59 @@ function mpOnPeers(){
   for(const p of ps){
     const pr=p.presence;const rd=mpNum(pr.rd,0);
     if(pr.st==='done'&&rd>0&&typeof pr.ms==='number'){
-      (MP.results[rd]||(MP.results[rd]={}))[p.sameTab?'__me':p.peer]={nick:mpStr(pr.nick,'Spieler'),ms:pr.ms,me:!!p.sameTab};
+      (MP.results[rd]||(MP.results[rd]={}))[p.sameTab?'__me':p.peer]={nick:mpStr(pr.nick,'Spieler'),ms:pr.ms,mv:mpNum(pr.mv,0),me:!!p.sameTab};
       const k=rd+'|'+p.peer;
       if(!MP.seenDone.has(k)){MP.seenDone.add(k);
         if(!p.sameTab&&G&&G.spec.mode==='race'&&G.spec.round===rd&&!G.won)toast(mpStr(pr.nick,'Jemand')+' ist fertig ('+fmt(pr.ms/1000)+')');}
     }
   }
-  // round start comes from the host
+  roulCollect(ps);
+  // round start (and roulette end) come from the host
   if(host&&host.presence){
-    const hr=mpNum(host.presence.hr,0);
+    const hp=host.presence;const hr=mpNum(hp.hr,0);
     if(MP.lastRound===null){if(!host.sameTab)MP.lastRound=hr;} // joined: skip a round already under way, wait for the next
-    else if(hr>MP.lastRound&&host.presence.seed){mpBegin(hr,host.presence.seed,mpNum(host.presence.diff,0.42));}
+    else if(hr>MP.lastRound&&hp.seed){mpBegin(hr,hp.seed,mpNum(hp.diff,0.42),hp.md==='roul'?'roul':'race',Array.isArray(hp.ro)?hp.ro:[]);}
+    if(MP.roul&&!MP.roul.ended&&mpNum(hp.rend,0)===MP.roul.round)roulEnd();
   }
   renderMp();renderRaceBar();
-  if($('raceOv').classList.contains('show'))renderRaceResults();
+  if($('raceOv').classList.contains('show'))(MP.resMode==='roul'?renderRoulResults():renderRaceResults());
 }
-function mpBegin(round,seed,t){
-  MP.lastRound=round;
-  closeOv('raceOv');closeOv('winOv');
-  startLevel({mode:'race',seed:seed|0,t,round});
-  if(!G)return;
-  mpSet({st:'race',rd:round,pl:0,tot:G.free.length,ms:null});
-  // 3-2-1 countdown; the clock starts for everyone at "Los"
+// 3-2-1 countdown; the clock starts for everyone at "Los"
+function runCountdown(onGo){
   G.locked=true;$('gTime').textContent='0:00';
   const g=G;const cd=$('countdown');const steps=['3','2','1','Los!'];
   steps.forEach((txt,i)=>setTimeout(()=>{
     if(G!==g)return;
     cd.innerHTML='<b>'+txt+'</b>';
     tone(i<3?520:880,i<3?.12:.3,'triangle',.12);
-    if(i===3){g.locked=false;g.t0=performance.now();setTimeout(()=>{if(G===g)cd.innerHTML='';},800);}
+    if(i===3){g.locked=false;g.t0=performance.now();if(onGo)onGo();setTimeout(()=>{if(G===g)cd.innerHTML='';},800);}
   },i*800));
+}
+function mpBegin(round,seed,t,md,order){
+  MP.lastRound=round;
+  if(md==='roul'){roulBegin(round,seed,t,order||[]);return;}
+  roulStop();
+  closeOv('raceOv');closeOv('winOv');MP.resMode='race';
+  startLevel({mode:'race',seed:seed|0,t,round});
+  if(!G)return;
+  mpSet({st:'race',rd:round,pl:0,tot:G.free.length,ms:null,mv:0});
+  runCountdown();
   renderRaceBar();
 }
 function mpStartRound(){
   if(!MP.R||!mpIsHost())return;
   const round=Math.max(MP.lastRound||0,mpNum(MP.mine.hr,0))+1;
   const seed=1+Math.floor(Math.random()*1e9);
-  mpSet({hr:round,seed});
-  mpBegin(round,seed,mpNum(MP.mine.diff,0.42));
+  const md=MP.mine.md==='roul'?'roul':'race';
+  const order=mpPeers().slice(0,MPMAX).map(p=>p.peer);
+  mpSet({hr:round,seed,ro:order,rend:0});
+  mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order);
 }
 function mpFinished(){
   const ms=Math.round(G.elapsed*1000);
-  mpSet({st:'done',ms,pl:G.free.length});
-  const rd=G.spec.round;(MP.results[rd]||(MP.results[rd]={}))['__me']={nick:MP.mine.nick,ms,me:true};
-  renderRaceResults();openOv('raceOv');
+  mpSet({st:'done',ms,pl:G.free.length,mv:G.moves});
+  const rd=G.spec.round;(MP.results[rd]||(MP.results[rd]={}))['__me']={nick:MP.mine.nick,ms,mv:G.moves,me:true};
+  MP.resMode='race';renderRaceResults();openOv('raceOv');
 }
 function mpWins(){
   const w={};
@@ -1706,6 +1742,7 @@ function mpWins(){
     let best=null;for(const pid in MP.results[rd]){const r=MP.results[rd][pid];if(!best||r.ms<best.ms)best={...r,pid};}
     if(best){const key=best.me?'__me':best.pid;w[key]=(w[key]||0)+1;}
   }
+  for(const rd in MP.roulWins){const key=MP.roulWins[rd];w[key]=(w[key]||0)+1;}
   return w;
 }
 function renderRaceResults(){
@@ -1714,10 +1751,10 @@ function renderRaceResults(){
   const live=mpPeers();
   const rows=[];const seen=new Set();
   for(const pid in res){const r=res[pid];const p=live.find(x=>(r.me&&x.sameTab)||x.peer===pid);
-    rows.push({nick:r.nick,ms:r.ms,me:r.me,col:p?mpColor(p):'#6b7190'});if(p)seen.add(p.peer);}
+    rows.push({nick:r.nick,ms:r.ms,mv:r.mv,me:r.me,col:p?mpColor(p):'#6b7190'});if(p)seen.add(p.peer);}
   for(const p of live){if(seen.has(p.peer)||p.sameTab&&rows.some(r=>r.me))continue;
     const pr=p.presence;if(mpNum(pr.rd,0)!==rd||pr.st!=='race')continue;
-    rows.push({nick:mpStr(pr.nick,'Spieler'),run:true,pl:mpNum(pr.pl,0),tot:mpNum(pr.tot,0),me:!!p.sameTab,col:mpColor(p)});}
+    rows.push({nick:mpStr(pr.nick,'Spieler'),run:true,pl:mpNum(pr.pl,0),tot:mpNum(pr.tot,0),mv:mpNum(pr.mv,0),me:!!p.sameTab,col:mpColor(p)});}
   rows.sort((a,b)=>(a.run?1:0)-(b.run?1:0)||(a.run?(b.pl/(b.tot||1))-(a.pl/(a.tot||1)):a.ms-b.ms));
   const list=$('raceList');list.innerHTML='';
   rows.forEach((r,i)=>{
@@ -1726,7 +1763,7 @@ function renderRaceResults(){
     const who=document.createElement('span');who.className='who';
     const dot=document.createElement('i');dot.className='dot';dot.style.background=r.col;
     const nm=document.createElement('span');nm.textContent=r.nick+(r.me?' (du)':'');who.append(dot,nm);
-    const tm=document.createElement('span');tm.className='tm'+(r.run?' run':'');tm.textContent=r.run?('spielt · '+r.pl+'/'+r.tot):fmt(r.ms/1000)+'.'+String(Math.floor(r.ms%1000/100));
+    const tm=document.createElement('span');tm.className='tm'+(r.run?' run':'');tm.textContent=r.run?('spielt · '+r.pl+'/'+r.tot+' · '+(r.mv||0)+' Züge'):fmt(r.ms/1000)+'.'+String(Math.floor(r.ms%1000/100))+' · '+(r.mv||0)+' Züge';
     d.append(pl,who,tm);list.appendChild(d);
   });
   const myIdx=rows.findIndex(r=>r.me&&!r.run);
@@ -1739,6 +1776,7 @@ function renderRaceResults(){
 }
 function renderRaceBar(){
   const bar=$('raceBar');
+  if(G&&G.spec.mode==='roul'&&MP.R&&MP.roul){renderRoulBar();return;}
   if(!G||G.spec.mode!=='race'||!MP.R){bar.hidden=true;return;}
   bar.hidden=false;bar.innerHTML='';
   for(const p of mpPeers()){
@@ -1749,9 +1787,11 @@ function renderRaceBar(){
     const dot=document.createElement('i');dot.className='dot';dot.style.background=col;
     const nm=document.createElement('span');nm.className='nm';nm.textContent=p.sameTab?'Du':mpStr(pr.nick,'Spieler');
     c.append(dot,nm);
+    const mv=document.createElement('span');mv.className='mv';mv.textContent=mpNum(pr.mv,0)+' Z';
     if(pr.st==='done'&&typeof pr.ms==='number'){const ok=document.createElement('span');ok.className='ok';ok.textContent='✓ '+fmt(pr.ms/1000);c.append(ok);}
     else{const pb=document.createElement('span');pb.className='pb';const fill=document.createElement('i');fill.style.background=col;
       const tot=mpNum(pr.tot,0)||1;fill.style.width=Math.min(100,mpNum(pr.pl,0)/tot*100)+'%';pb.append(fill);c.append(pb);}
+    c.append(mv);
     bar.appendChild(c);
   }
 }
@@ -1778,14 +1818,133 @@ function renderMp(){
     const nm=document.createElement('span');nm.className='nm';nm.textContent=mpStr(pr.nick,'Spieler')+(p.sameTab?' (du)':'');
     d.append(dot,nm);
     const w=wins[p.sameTab?'__me':p.peer];if(w){const ws=document.createElement('span');ws.className='wins';ws.textContent='🏆 '+w;d.append(ws);}
-    if(pr.st==='race'){const t=document.createElement('span');t.className='tag2';t.textContent='spielt';d.append(t);}
+    if(pr.st==='race'||pr.st==='roul'){const t=document.createElement('span');t.className='tag2';t.textContent='spielt';d.append(t);}
     if(i===0){const t=document.createElement('span');t.className='tag2 host';t.textContent='Host';d.append(t);}
     slots.appendChild(d);
   });
   for(let i=ps.length;i<MPMAX;i++){const d=document.createElement('div');d.className='mp-slot empty';d.textContent='Freier Platz';slots.appendChild(d);}
   const hostP=ps[0];const diff=hostP?mpNum(hostP.presence.diff,0.42):0.42;
   document.querySelectorAll('#mpDiffs button').forEach(b=>{b.classList.toggle('on',Math.abs(+b.dataset.d-diff)<.01);b.disabled=!host;});
+  const md=hostP&&hostP.presence.md==='roul'?'roul':'race';
+  document.querySelectorAll('#mpModes button').forEach(b=>{b.classList.toggle('on',b.dataset.m===md);b.disabled=!host;});
+  $('mpStart').textContent=md==='roul'?'Roulette starten':'Rennen starten';
   $('mpStart').hidden=!host;$('mpWait').hidden=host;
+}
+
+/* ---------- ROULETTE: every player starts on their own board; every 2 minutes the boards
+   move one seat on and all pieces fall out. Board "slot" s in round r, generation g has a fixed seed,
+   so nobody has to send whole boards around: player i plays slot (i + epoch) mod n.
+   Solving a board bumps that slot's generation (everyone counts solves from presence). ---------- */
+const SWAP=window.__HX_SWAP||120000; // 2 minutes
+function roulSeed(base,slot,gen){return ((Math.imul(base|0,31)+slot*1000003+gen*1299709)>>>0)%999999937+1;}
+function roulGen(round,slot){let n=0;const pre=round+':'+slot+':';for(const k of MP.roulSv)if(k.startsWith(pre))n++;return n;}
+function roulCollect(ps){
+  const R=MP.roul;if(!R)return;
+  for(const p of ps){
+    const pr=p.presence;if(mpNum(pr.rd,0)!==R.round||!Array.isArray(pr.sv))continue;
+    const before=MP.roulSv.size;
+    for(const e of pr.sv.slice(0,200))if(typeof e==='string')MP.roulSv.add(R.round+':'+e);
+    const key=p.sameTab?'__me':p.peer;
+    const prev=MP.roulScore[key];
+    MP.roulScore[key]={nick:mpStr(pr.nick,'Spieler'),n:pr.sv.length,mv:mpNum(pr.mv,0),me:!!p.sameTab,col:mpColor(p)};
+    if(!p.sameTab&&prev&&pr.sv.length>prev.n&&!R.ended)toast(mpStr(pr.nick,'Jemand')+' hat ein Brett gelöst (★ '+pr.sv.length+')');
+  }
+}
+function roulBegin(round,base,t,order){
+  roulStop();
+  const me=(MP.R?MP.R.peers():[]).find(p=>p.sameTab);
+  const idx=me?order.indexOf(me.peer):-1;
+  if(idx<0){toast('Roulette läuft schon. Du bist in der nächsten Runde dabei.');return;}
+  closeOv('raceOv');closeOv('winOv');MP.resMode='roul';
+  MP.roulScore={};
+  const R=MP.roul={round,base,t,order,n:order.length,idx,epoch:0,start:0,moves:0,solved:[],ended:false,warned:-1,ticked:-1};
+  mpSet({st:'roul',rd:round,sv:[],mv:0,pl:0,tot:0,ms:null});
+  roulLoad();
+  runCountdown(()=>{if(MP.roul!==R)return;R.start=performance.now();R.timer=setInterval(roulTick,200);});
+}
+function roulLoad(){
+  const R=MP.roul;if(!R)return;
+  const slot=(R.idx+R.epoch)%R.n;const gen=roulGen(R.round,slot);
+  R.slot=slot;R.gen=gen;
+  startLevel({mode:'roul',seed:roulSeed(R.base,slot,gen),t:R.t,round:R.round,slot,gen});
+  if(G){G.t0=performance.now();mpSet({pl:0,tot:G.free.length,mv:R.moves});}
+  renderRaceBar();
+}
+function roulTick(){
+  const R=MP.roul;if(!R||R.ended||!R.start)return;
+  const el=performance.now()-R.start;const e=Math.floor(el/SWAP);const rem=SWAP-el%SWAP;
+  if(rem<10500&&R.warned!==e){R.warned=e;toast('Wechsel in 10 Sekunden!');}
+  const sec=Math.ceil(rem/1000);
+  if(sec<=3&&R.ticked!==e*10+sec){R.ticked=e*10+sec;tone(660,.08,'square',.05);}
+  if(e!==R.epoch){
+    if(G&&G.spec.mode==='roul'&&!G.won)R.moves+=G.moves;
+    R.epoch=e;roulLoad();
+    toast('Bretter gewechselt! Alle Teile sind rausgefallen.');SFX.drop();buzz([20,30,20]);
+  }
+}
+function roulSolved(){
+  const R=MP.roul;if(!R||R.ended)return;
+  R.moves+=G.moves;
+  const k=R.slot+':'+R.gen;R.solved.push(k);MP.roulSv.add(R.round+':'+k);
+  mpSet({sv:R.solved.slice(),mv:R.moves});
+  toast('Gelöst! ★ '+R.solved.length+' · nächstes Brett kommt');
+  const g=G;
+  setTimeout(()=>{if(MP.roul===R&&!R.ended&&G===g)roulLoad();},1300);
+}
+function roulStop(){
+  const R=MP.roul;if(!R)return;
+  clearInterval(R.timer);MP.roul=null;
+}
+function roulEnd(){
+  const R=MP.roul;if(!R||R.ended)return;
+  R.ended=true;clearInterval(R.timer);
+  if(G&&G.spec.mode==='roul'){if(!G.won)R.moves+=G.moves;G.locked=true;G.won=true;}
+  mpSet({st:'done',mv:R.moves});
+  roulCollect(mpPeers());
+  MP.roulScore['__me']={...(MP.roulScore['__me']||{}),nick:MP.mine.nick,n:R.solved.length,mv:R.moves,me:true};
+  const rows=roulRows();
+  if(rows.length&&rows[0].n>0)MP.roulWins[R.round]=rows[0].key;
+  MP.resMode='roul';renderRoulResults();openOv('raceOv');
+  if(rows[0]&&rows[0].me&&rows[0].n>0){SFX.win();confetti();}
+}
+function roulRows(){
+  return Object.entries(MP.roulScore).map(([key,v])=>({key,...v})).sort((a,b)=>(b.n-a.n)||(a.mv-b.mv));
+}
+function renderRoulResults(){
+  const R=MP.roul||{};const rows=roulRows();
+  const list=$('raceList');list.innerHTML='';
+  rows.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='res'+(r.me?' me':'')+(i===0&&r.n>0?' first':'');
+    const pl=document.createElement('span');pl.className='pl';pl.textContent=i===0&&r.n>0?'🏆':String(i+1);
+    const who=document.createElement('span');who.className='who';
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=r.col||'#6b7190';
+    const nm=document.createElement('span');nm.textContent=r.nick+(r.me?' (du)':'');who.append(dot,nm);
+    const tm=document.createElement('span');tm.className='tm';tm.textContent='★ '+r.n+' gelöst · '+r.mv+' Züge';
+    d.append(pl,who,tm);list.appendChild(d);
+  });
+  const my=rows.findIndex(r=>r.me);
+  $('raceTitle').textContent=my===0&&rows[0].n>0?'Gewonnen! 🏆':'Platz '+(my+1);
+  $('raceSub').textContent='Roulette · Runde '+(R.round||'')+' · bei Gleichstand zählen weniger Züge';
+  $('raceNext').hidden=!mpIsHost();$('raceNext').textContent='Neue Runde starten';
+}
+function renderRoulBar(){
+  const bar=$('raceBar');const R=MP.roul;bar.hidden=false;bar.innerHTML='';
+  for(const p of mpPeers()){
+    const pr=p.presence;if(mpNum(pr.rd,0)!==R.round||(pr.st!=='roul'&&pr.st!=='done')){if(!p.sameTab)continue;}
+    const c=document.createElement('div');c.className='rc'+(p.sameTab?' me':'');const col=mpColor(p);
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=col;
+    const nm=document.createElement('span');nm.className='nm';nm.textContent=p.sameTab?'Du':mpStr(pr.nick,'Spieler');
+    const sc=document.createElement('span');sc.className='sc';sc.textContent='★'+(Array.isArray(pr.sv)?pr.sv.length:0);
+    const pb=document.createElement('span');pb.className='pb';const fill=document.createElement('i');fill.style.background=col;
+    const tot=mpNum(pr.tot,0)||1;fill.style.width=Math.min(100,mpNum(pr.pl,0)/tot*100)+'%';pb.append(fill);
+    const mv=document.createElement('span');mv.className='mv';mv.textContent=mpNum(pr.mv,0)+' Z';
+    c.append(dot,nm,sc,pb,mv);bar.appendChild(c);
+  }
+  if(mpIsHost()&&!R.ended){
+    const b=document.createElement('button');b.className='rc-end';b.textContent='Spiel beenden';
+    b.onclick=()=>{if(b.dataset.arm){mpSet({rend:R.round});roulEnd();}else{b.dataset.arm=1;b.textContent='Wirklich beenden?';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Spiel beenden';}},3000);}};
+    bar.appendChild(b);
+  }
 }
 $('btnMp').onclick=()=>{show('mp');renderMp();};
 $('mpBack').onclick=()=>show('menu');
@@ -1801,6 +1960,7 @@ $('mpCopy').onclick=()=>{
   const txt=MP.code||'';
   try{navigator.clipboard.writeText(txt).then(()=>toast('Code '+txt+' kopiert'),()=>toast('Code: '+txt));}catch(e){toast('Code: '+txt);}
 };
+document.querySelectorAll('#mpModes button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({md:b.dataset.m});renderMp();}});
 document.querySelectorAll('#mpDiffs button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({diff:+b.dataset.d});renderMp();}});
 $('mpStart').onclick=()=>{ac();mpStartRound();};
 $('raceNext').onclick=()=>mpStartRound();

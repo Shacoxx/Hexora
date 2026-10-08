@@ -1,5 +1,5 @@
 // Hexora offline cache: everything is stored on first visit, then the game runs without internet.
-const CACHE = 'hexora-v3';
+const CACHE = 'hexora-v4';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'music/waves.mp3', 'music/natural-world-bass.mp3', 'music/cosmic-earth.mp3'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
