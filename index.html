@@ -762,6 +762,47 @@ function partition(cellsArr,minS,maxS,rng){
 }
 const PALETTE=['#39e27d','#2fd3ff','#b8f53a','#4d6bff','#8f5bff','#ff3b4e','#ff8a2a','#ffd12e','#ff3ea5','#b04dff','#27e0c2','#ff6b6b','#5aa9ff','#ff9ed2','#7dffb2','#ffb347'];
 
+// cells of the free (player-placed) pieces form holes; a hole holding only one piece is a trivial fit
+function freeOk(parts,freeSet){
+  const owner=new Map();
+  parts.forEach((ks,i)=>{if(freeSet.has(i))for(const k of ks)owner.set(k,i);});
+  const seen=new Set();
+  for(const k of owner.keys()){
+    if(seen.has(k))continue;
+    const ids=new Set();const st=[k];seen.add(k);
+    while(st.length){const x=st.pop();ids.add(owner.get(x));const [r,c]=parseKey(x);
+      for(const [a,b] of neighbors(r,c)){const y=key(a,b);if(owner.has(y)&&!seen.has(y)){seen.add(y);st.push(y);}}}
+    if(ids.size<2)return false;
+  }
+  return true;
+}
+// choose free pieces as clusters of touching pieces (each cluster at least 2), so no piece sits alone
+function pickFree(parts,free,rng){
+  const n=parts.length;const cellOf=new Map();
+  parts.forEach((ks,i)=>ks.forEach(k=>cellOf.set(k,i)));
+  const adj=parts.map(()=>new Set());
+  parts.forEach((ks,i)=>ks.forEach(k=>{const [r,c]=parseKey(k);for(const [a,b] of neighbors(r,c)){const j=cellOf.get(key(a,b));if(j!==undefined&&j!==i)adj[i].add(j);}}));
+  for(let attempt=0;attempt<200;attempt++){
+    const maxK=Math.max(1,Math.floor(free/2));
+    const k=attempt<150?1+Math.floor(rng()*maxK):1;
+    const chosen=new Set();const clusters=[];
+    const order=shuffle([...Array(n).keys()],rng);
+    for(const sd of order){if(clusters.length>=k)break;if(chosen.has(sd)||[...adj[sd]].some(j=>chosen.has(j)))continue;chosen.add(sd);clusters.push([sd]);}
+    let guard=0;
+    while(chosen.size<free&&guard++<500){
+      // grow the smallest cluster first, so every cluster reaches two pieces
+      clusters.sort((a,b)=>a.length-b.length);
+      let grown=false;
+      for(const cl of clusters){
+        const cand=[];for(const i of cl)for(const j of adj[i])if(!chosen.has(j))cand.push(j);
+        if(cand.length){const j=cand[Math.floor(rng()*cand.length)];chosen.add(j);cl.push(j);grown=true;break;}
+      }
+      if(!grown)break;
+    }
+    if(chosen.size===free&&freeOk(parts,chosen))return chosen;
+  }
+  return null;
+}
 function makeLevel(seed,t){
   const rng=mulberry32(seed);
   // t: 0..1.5 (above 1 = bigger boards beyond the classic range)
@@ -781,7 +822,9 @@ function makeLevel(seed,t){
     let free=Math.round(2+(n-2)*Math.pow(tf,0.85));
     const cap=t>=0.8?n:n-1;
     free=Math.max(2,Math.min(cap,free));
-    const idx=shuffle([...Array(n).keys()],rng);const freeSet=new Set(idx.slice(0,free));
+    const idx=shuffle([...Array(n).keys()],rng);let freeSet=new Set(idx.slice(0,free));
+    // No "baby fit": every empty hole must need at least two pieces. Good picks stay as they were.
+    if(!freeOk(parts,freeSet))freeSet=pickFree(parts,free,mulberry32((seed^0x5bd1e995)>>>0))||freeSet;
     const colors=shuffle(PALETTE.slice(),rng);
     const pieces=parts.map((ks,i)=>{
       const cells=ks.map(parseKey);const ns=normalizeShift(cells);
