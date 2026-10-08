@@ -233,6 +233,61 @@ input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer}
 input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:#fff;cursor:pointer}
 input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.mp-wrap{flex:1;overflow-y:auto;padding:20px 16px 40px}
+.mp-inner{max-width:560px;margin:0 auto;display:grid;gap:16px}
+.mp-card{background:var(--ink-2);border:1px solid var(--line);border-radius:20px;padding:20px;display:grid;gap:14px}
+.mp-card h3{margin:0;font-family:var(--font-display);font-size:16px;letter-spacing:.03em}
+.mp-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.mp-field{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.mp-input{width:100%;background:var(--ink-3);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--fg);font:600 16px var(--font-body);outline:none;-webkit-user-select:text;user-select:text}
+.mp-input:focus{border-color:var(--accent)}
+.mp-code-in{text-transform:uppercase;letter-spacing:.35em;font-family:var(--font-display);text-align:center}
+.mp-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.2em}
+.mp-or::before,.mp-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.mp-join-row{display:flex;gap:8px}
+.mp-join-row .mp-input{flex:1;min-width:0}
+.mp-join-row .btn{flex:none;justify-content:center}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.mp-note{background:rgba(255,77,94,.08);border:1px solid rgba(255,77,94,.25);color:var(--fg);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5}
+.mp-codebox{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mp-code{display:flex;gap:6px}
+.mp-code b{width:44px;height:52px;display:grid;place-items:center;border-radius:12px;background:var(--ink-3);border:1px solid var(--line);font-family:var(--font-display);font-size:24px;color:var(--accent)}
+.mp-slots{display:grid;gap:8px}
+.mp-slot{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;background:var(--ink-3);border:1px solid var(--line);font-weight:600;min-height:50px}
+.mp-slot.empty{background:none;border-style:dashed;color:#4a4f68;font-weight:500}
+.mp-slot .dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
+.mp-slot .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-slot .tag2{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:2px 7px;white-space:nowrap}
+.mp-slot .tag2.host{color:var(--accent);border-color:rgba(255,209,46,.35)}
+.mp-slot .wins{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mp-diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mp-diffs button{border:1px solid var(--line);background:var(--ink-3);border-radius:12px;padding:10px 4px;font-size:13px;font-weight:700}
+.mp-diffs button.on{border-color:var(--c);color:var(--c);background:color-mix(in srgb,var(--c) 12%,var(--ink-3))}
+.mp-diffs button:disabled{cursor:default}
+.mp-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.mp-status i{width:8px;height:8px;border-radius:50%;background:#6b7190}
+.mp-status.on i{background:var(--prism-1);box-shadow:0 0 8px var(--prism-1)}
+#raceBar{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;border-bottom:1px solid var(--line);background:rgba(8,9,14,.5)}
+.rc{flex:none;display:flex;align-items:center;gap:8px;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:600}
+.rc .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.rc .nm{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc .pb{width:54px;height:5px;border-radius:5px;background:var(--ink-3);overflow:hidden}
+.rc .pb i{display:block;height:100%;border-radius:5px;transition:width .4s}
+.rc .ok{color:var(--prism-1);font-variant-numeric:tabular-nums}
+.rc.me{border-color:rgba(255,255,255,.22)}
+#countdown{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:5}
+#countdown b{font-family:var(--font-display);font-size:min(30vw,180px);color:var(--accent);text-shadow:0 0 40px rgba(255,209,46,.5);animation:cd .8s ease-out both}
+@keyframes cd{from{transform:scale(1.6);opacity:0}30%{opacity:1}to{transform:scale(.8);opacity:0}}
+.res-list{display:grid;gap:8px;margin:6px 0 18px}
+.res{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--ink-3);font-weight:600}
+.res.me{outline:1px solid rgba(255,255,255,.25)}
+.res .pl{font-family:var(--font-display);font-size:15px;color:var(--muted);text-align:center}
+.res.first .pl{color:var(--accent)}
+.res .who{display:flex;align-items:center;gap:8px;min-width:0}
+.res .who span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .who .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.res .tm{font-variant-numeric:tabular-nums;font-size:14px}
+.res .tm.run{color:var(--muted);font-weight:500;font-size:13px}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-10px);opacity:0;z-index:40;background:var(--ink-3);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;transition:all .25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
@@ -271,6 +326,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
       <div class="menu-btns">
         <button class="btn primary" id="btnContinue">Spielen <small id="contLbl">Level 1</small></button>
         <button class="btn" id="btnLevels">Levelauswahl <small>6 Stufen</small></button>
+        <button class="btn" id="btnMp">Mehrspieler <small>bis 5 Spieler</small></button>
         <div class="menu-row">
           <button class="btn" id="btnDaily">Tägliche Challenge <small id="dailyLbl">heute</small></button>
           <button class="btn" id="btnRandom">Zufallspuzzle <small>endlos</small></button>
@@ -293,6 +349,56 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
     <div id="levelList"></div>
   </section>
 
+  <!-- MULTIPLAYER -->
+  <section id="mp" class="screen" aria-label="Mehrspieler">
+    <div class="bar-top">
+      <button class="ibtn" id="mpBack" aria-label="Zurück"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <h2>Mehrspieler</h2>
+      <span class="mp-status" id="mpConn"><i></i><span>offline</span></span>
+    </div>
+    <div class="mp-wrap"><div class="mp-inner">
+      <div class="mp-note" id="mpNote" hidden></div>
+      <div id="mpJoin" class="mp-card">
+        <h3>Wettrennen mit Freunden</h3>
+        <p>Alle in der Lobby bekommen dasselbe Rätsel. Wer es am schnellsten löst, gewinnt die Runde.</p>
+        <label class="mp-field" for="mpNick">Dein Name<input class="mp-input" id="mpNick" maxlength="14" autocomplete="off" spellcheck="false"></label>
+        <button class="btn primary" id="mpCreate" style="justify-content:center">Lobby erstellen</button>
+        <div class="mp-or">oder</div>
+        <div class="mp-join-row">
+          <input class="mp-input mp-code-in" id="mpCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false" aria-label="Lobby-Code">
+          <button class="btn" id="mpJoinBtn">Beitreten</button>
+        </div>
+      </div>
+      <div id="mpLobby" hidden>
+        <div class="mp-inner">
+          <div class="mp-card">
+            <div class="mp-codebox">
+              <div><p style="margin-bottom:8px">Lobby-Code</p><div class="mp-code" id="mpCodeShow"></div></div>
+              <button class="btn" id="mpCopy">Code kopieren</button>
+            </div>
+            <p>Deine Freunde öffnen Hexora hier in Claude, tippen auf <b>Mehrspieler</b> und geben den Code ein.</p>
+          </div>
+          <div class="mp-card">
+            <h3 id="mpCount">Spieler 1/5</h3>
+            <div class="mp-slots" id="mpSlots"></div>
+          </div>
+          <div class="mp-card">
+            <h3>Schwierigkeit</h3>
+            <div class="mp-diffs" id="mpDiffs">
+              <button data-d="0.12" style="--c:var(--prism-1)">Leicht</button>
+              <button data-d="0.42" style="--c:var(--prism-2)">Mittel</button>
+              <button data-d="0.72" style="--c:var(--prism-3)">Schwer</button>
+              <button data-d="1" style="--c:var(--prism-5)">Genie</button>
+            </div>
+            <button class="btn primary" id="mpStart" style="justify-content:center">Rennen starten</button>
+            <p id="mpWait" hidden style="text-align:center">Warte, bis der Host das Rennen startet …</p>
+          </div>
+          <button class="btn" id="mpLeave" style="justify-content:center">Lobby verlassen</button>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
   <!-- GAME -->
   <section id="game" class="screen" aria-label="Spiel">
     <div class="hud">
@@ -307,7 +413,8 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
       <button class="ibtn" id="gMusic" aria-label="Musik"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></button>
       <button class="ibtn" id="gSound" aria-label="Ton an/aus"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg></button>
     </div>
-    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="raceBar" hidden></div>
+    <div id="stage"><canvas id="cv"></canvas><div id="countdown"></div></div>
     <div class="actions">
       <button class="act" id="aUndo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>Zurück</button>
       <button class="act" id="aReset"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/></svg>Neu</button>
@@ -319,6 +426,19 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
       <button class="act hint" id="aHint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0012 2z"/></svg>Tipp <span class="badge" id="hintCnt"></span></button>
     </div>
   </section>
+</div>
+
+<!-- RACE RESULT -->
+<div class="overlay" id="raceOv" role="dialog" aria-modal="true">
+  <div class="card">
+    <h2 id="raceTitle">Platz 1</h2>
+    <p style="text-align:center" id="raceSub">Rennen beendet</p>
+    <div class="res-list" id="raceList"></div>
+    <div class="btns">
+      <button class="btn primary" id="raceNext" style="justify-content:center">Nächste Runde starten</button>
+      <button class="btn" id="raceLobby" style="justify-content:center">Zur Lobby</button>
+    </div>
+  </div>
 </div>
 
 <!-- WIN -->
@@ -918,7 +1038,9 @@ function startLevel(spec){
      undo:[],moves:0,hints:0,t0:performance.now(),won:false,wonAt:0,hover:null,elapsed:0};
   if(spec.mode==='level'){const T=tierOf(spec.L);$('gTitle').textContent='Level '+spec.L;$('gSub').textContent=T.name+' · '+lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color=T.color;}
   else if(spec.mode==='daily'){$('gTitle').textContent='Tägliche Challenge';$('gSub').textContent=new Date().toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});$('gSub').style.color='var(--accent)';}
+  else if(spec.mode==='race'){$('gTitle').textContent='Rennen · Runde '+spec.round;$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--prism-3)';}
   else{$('gTitle').textContent='Zufallspuzzle';$('gSub').textContent=lvl.shape+' · '+lvl.board.length+' Felder';$('gSub').style.color='var(--muted)';}
+  $('aHint').hidden=spec.mode==='race';$('raceBar').hidden=spec.mode!=='race';$('countdown').innerHTML='';
   $('gSolve').hidden=spec.mode!=='random';$('gSolve').classList.remove('arm');
   Lay=null;boardLayer=null; // old layout belongs to the previous board
   updateHud();
@@ -960,6 +1082,7 @@ function updateHud(){
   const left=G.free.filter(id=>!G.pieces[id].placed).length;
   $('gLeft').textContent=left;$('gMoves').textContent=G.moves;
   $('hintCnt').textContent=G.hints?('·'+G.hints):'';
+  if(G.spec.mode==='race'&&typeof mpProgress==='function')mpProgress(G.free.length-left,G.free.length);
 }
 
 /* ---------- actions ---------- */
@@ -994,7 +1117,7 @@ function resetBoard(){
   if(any){pushUndo(s);SFX.drop();}updateHud();
 }
 function hint(){
-  if(!G||G.won)return;
+  if(!G||G.won||G.spec.mode==='race')return;
   const solKey=p=>p.base.map(([r,c])=>key(r+p.solT[0],c+p.solT[1])).sort().join(';');
   const curKey=p=>p.placed?cellsOf(p).map(([r,c])=>key(r,c)).sort().join(';'):'';
   const wrong=G.free.map(id=>G.pieces[id]).filter(p=>solKey(p)!==curKey(p));
@@ -1042,7 +1165,7 @@ document.addEventListener('keydown',e=>{
   if(k==='r'||e.key==='ArrowRight'){rotatePiece(id,e.shiftKey?-1:1);e.preventDefault();}
   else if(k==='e'||e.key==='ArrowLeft'){rotatePiece(id,-1);e.preventDefault();}
   else if(k==='f'){flipPiece(id);}
-  else if(k==='h'){hint();}
+  else if(k==='h'&&G.spec.mode!=='race'){hint();}
   else if(e.key==='Escape'){$('gBack').click();}
 });
 
@@ -1056,6 +1179,7 @@ function checkWin(){
 }
 function showWin(){
   if(!G)return;
+  if(G.spec.mode==='race'){mpFinished();return;}
   const t=G.elapsed,par=G.lvl.par;
   let stars=1;
   if(G.hints===0&&t<=par)stars=3;else if(G.hints<=1&&t<=par*2.5)stars=2;
@@ -1165,7 +1289,7 @@ function hitTray(p){
   return null;
 }
 cv.addEventListener('pointerdown',e=>{
-  if(!G||G.won||!Lay)return;
+  if(!G||G.won||!Lay||G.locked)return;
   const p=ptr(e);let id=hitBoard(p);if(id==null)id=hitTray(p);
   if(id==null)return;
   e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(_){}
@@ -1225,7 +1349,7 @@ function frame(now){
   const dt=Math.min(50,now-last);last=now;
   if(current==='menu')drawHero(now,dt);
   if(current!=='game'||!G||!Lay||!boardLayer)return;
-  if(!G.won){const el=(now-G.t0)/1000;const tt=fmt(el);if($('gTime').textContent!==tt)$('gTime').textContent=tt;}
+  if(!G.won&&!G.locked){const el=(now-G.t0)/1000;const tt=fmt(el);if($('gTime').textContent!==tt)$('gTime').textContent=tt;}
   const k=1-Math.pow(1-0.24,dt/16.7),kd=1-Math.pow(1-0.55,dt/16.7);
   ctx.setTransform(Lay.dpr,0,0,Lay.dpr,0,0);
   ctx.clearRect(0,0,Lay.W,Lay.H);
@@ -1374,8 +1498,8 @@ new ResizeObserver(()=>{if(current==='menu'){hero=null;buildHero();}}).observe(h
 
 // remember where the player came from, so "back" returns there
 const _start=startLevel;
-startLevel=function(spec){lastMenu=current==='levels'?'levels':(current==='game'?lastMenu:'menu');_start(spec);};
-$('gBack').onclick=()=>{G=null;show(lastMenu);};
+startLevel=function(spec){lastMenu=spec.mode==='race'?'mp':(current==='levels'?'levels':(current==='game'?lastMenu:'menu'));_start(spec);};
+$('gBack').onclick=()=>{const race=G&&G.spec.mode==='race';G=null;if(race&&typeof mpLeaveRace==='function')mpLeaveRace();show(lastMenu);};
 
 /* =====================================================================
    MUSIC
@@ -1459,12 +1583,235 @@ if(save.music&&!IOS)setTimeout(()=>musicPlay(),150);else if(save.music&&IOS)setT
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(!audio.paused){audio.pause();audio._resume=true;}}else{if(AC&&AC.state!=='running')AC.resume().catch(()=>{});if(audio._resume){audio._resume=false;audio.play().catch(()=>{});}}});
 renderMusic();
 
+/* =====================================================================
+   MULTIPLAYER (race): lobbies of up to 5 players, same puzzle for all.
+   Everything travels as presence (absolute state each player keeps current):
+   - every player: lobby code, nickname, join order, round played, progress, finish time
+   - the host (first in join order) also: current round number, seed, difficulty
+   Each client starts a round when it sees the host's round number go up.
+   ===================================================================== */
+const MPMAX=5;
+const MPCOLS=['#39e27d','#ffd12e','#ff4d5e','#b04dff','#2fb8ff'];
+const MP={ns:null,ready:false,R:null,code:null,mine:{},lastRound:null,results:{},seenDone:new Set(),unsub:null,unconn:null,named:false};
+const mpNum=(v,d)=>typeof v==='number'&&isFinite(v)?v:d;
+const mpStr=(v,d)=>typeof v==='string'?v.slice(0,14):d;
+if(!save.nick){save.nick='Spieler '+(10+Math.floor(Math.random()*90));persist();}
+$('mpNick').value=save.nick;
+$('mpNick').addEventListener('input',e=>{save.nick=e.target.value.trim().slice(0,14)||save.nick;persist();});
+(async()=>{
+  try{if(window.claude&&typeof window.claude.use==='function')MP.ns=await window.claude.use('room');}catch(e){MP.ns=null;}
+  MP.ready=true;renderMp();
+})();
+
+function mpPeers(){
+  if(!MP.R)return [];
+  let ps=[];
+  try{ps=MP.R.peers().filter(p=>p.kind==='viewer'&&p.presence&&p.presence.lobby===MP.code);}catch(e){}
+  if(!ps.some(p=>p.sameTab))ps=ps.concat([{peer:'__me',sameTab:true,isMe:true,presence:MP.mine}]);
+  return ps.slice().sort((a,b)=>(mpNum(a.presence.rank,1)-mpNum(b.presence.rank,1))||(mpNum(a.presence.since,0)-mpNum(b.presence.since,0))||(a.peer<b.peer?-1:1));
+}
+function mpMe(){return mpPeers().find(p=>p.sameTab);}
+function mpHost(){return mpPeers()[0];}
+function mpIsHost(){const h=mpHost();return !!h&&h.sameTab;}
+function mpColor(p){const i=mpPeers().indexOf(p);return MPCOLS[(i<0?0:i)%MPCOLS.length];}
+function mpSet(patch){Object.assign(MP.mine,patch);for(const k in patch)if(patch[k]===null)delete MP.mine[k];if(MP.R)MP.R.presence(patch).catch(()=>{});}
+
+function mpCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c;}
+async function mpEnter(code,create){
+  if(!MP.ns){renderMp();return;}
+  const nick=($('mpNick').value.trim()||save.nick).slice(0,14);save.nick=nick;persist();
+  $('mpCreate').disabled=$('mpJoinBtn').disabled=true;
+  let R=null,named=false;
+  try{R=await MP.ns.join('hx-'+code.toLowerCase());named=true;}catch(e){R=MP.ns;named=false;}
+  MP.R=R;MP.named=named;MP.code=code;MP.results={};MP.seenDone=new Set();
+  MP.lastRound=create?0:null;
+  MP.mine={};
+  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',hr:0,diff:0.42,seed:0,rd:0,pl:0,tot:0,ms:null});
+  MP.unsub=R.onPeers(mpOnPeers,()=>{toast('Verbindung zur Lobby verloren');mpLeave();});
+  MP.unconn=R.onConnection?R.onConnection(()=>renderMp()):null;
+  $('mpCreate').disabled=$('mpJoinBtn').disabled=false;
+  renderMp();
+  if(!create)setTimeout(()=>{
+    if(!MP.R||MP.code!==code)return;
+    const ps=mpPeers();const i=ps.findIndex(p=>p.sameTab);
+    if(i>=MPMAX){toast('Diese Lobby ist voll ('+MPMAX+'/'+MPMAX+')');mpLeave();}
+    else if(ps.length===1)toast('Noch niemand hier. Stimmt der Code '+code+'?');
+  },2500);
+}
+function mpLeave(){
+  try{if(MP.unsub)MP.unsub();if(MP.unconn)MP.unconn();}catch(e){}
+  if(MP.R){if(MP.named)MP.R.leave().catch(()=>{});else MP.R.presence({lobby:null,st:null}).catch(()=>{});}
+  MP.R=null;MP.code=null;MP.unsub=MP.unconn=null;MP.mine={};
+  closeOv('raceOv');
+  renderMp();
+}
+function mpLeaveRace(){if(MP.R)mpSet({st:'lobby'});closeOv('raceOv');renderMp();}
+function mpProgress(pl,tot){if(!MP.R)return;if(MP.mine.pl!==pl||MP.mine.tot!==tot)mpSet({pl,tot});}
+
+function mpOnPeers(){
+  if(!MP.R)return;
+  const ps=mpPeers();const host=ps[0];
+  // remember results of every round (peers may leave later)
+  for(const p of ps){
+    const pr=p.presence;const rd=mpNum(pr.rd,0);
+    if(pr.st==='done'&&rd>0&&typeof pr.ms==='number'){
+      (MP.results[rd]||(MP.results[rd]={}))[p.sameTab?'__me':p.peer]={nick:mpStr(pr.nick,'Spieler'),ms:pr.ms,me:!!p.sameTab};
+      const k=rd+'|'+p.peer;
+      if(!MP.seenDone.has(k)){MP.seenDone.add(k);
+        if(!p.sameTab&&G&&G.spec.mode==='race'&&G.spec.round===rd&&!G.won)toast(mpStr(pr.nick,'Jemand')+' ist fertig ('+fmt(pr.ms/1000)+')');}
+    }
+  }
+  // round start comes from the host
+  if(host&&host.presence){
+    const hr=mpNum(host.presence.hr,0);
+    if(MP.lastRound===null){if(!host.sameTab)MP.lastRound=hr;} // joined: skip a round already under way, wait for the next
+    else if(hr>MP.lastRound&&host.presence.seed){mpBegin(hr,host.presence.seed,mpNum(host.presence.diff,0.42));}
+  }
+  renderMp();renderRaceBar();
+  if($('raceOv').classList.contains('show'))renderRaceResults();
+}
+function mpBegin(round,seed,t){
+  MP.lastRound=round;
+  closeOv('raceOv');closeOv('winOv');
+  startLevel({mode:'race',seed:seed|0,t,round});
+  if(!G)return;
+  mpSet({st:'race',rd:round,pl:0,tot:G.free.length,ms:null});
+  // 3-2-1 countdown; the clock starts for everyone at "Los"
+  G.locked=true;$('gTime').textContent='0:00';
+  const g=G;const cd=$('countdown');const steps=['3','2','1','Los!'];
+  steps.forEach((txt,i)=>setTimeout(()=>{
+    if(G!==g)return;
+    cd.innerHTML='<b>'+txt+'</b>';
+    tone(i<3?520:880,i<3?.12:.3,'triangle',.12);
+    if(i===3){g.locked=false;g.t0=performance.now();setTimeout(()=>{if(G===g)cd.innerHTML='';},800);}
+  },i*800));
+  renderRaceBar();
+}
+function mpStartRound(){
+  if(!MP.R||!mpIsHost())return;
+  const round=Math.max(MP.lastRound||0,mpNum(MP.mine.hr,0))+1;
+  const seed=1+Math.floor(Math.random()*1e9);
+  mpSet({hr:round,seed});
+  mpBegin(round,seed,mpNum(MP.mine.diff,0.42));
+}
+function mpFinished(){
+  const ms=Math.round(G.elapsed*1000);
+  mpSet({st:'done',ms,pl:G.free.length});
+  const rd=G.spec.round;(MP.results[rd]||(MP.results[rd]={}))['__me']={nick:MP.mine.nick,ms,me:true};
+  renderRaceResults();openOv('raceOv');
+}
+function mpWins(){
+  const w={};
+  for(const rd in MP.results){
+    let best=null;for(const pid in MP.results[rd]){const r=MP.results[rd][pid];if(!best||r.ms<best.ms)best={...r,pid};}
+    if(best){const key=best.me?'__me':best.pid;w[key]=(w[key]||0)+1;}
+  }
+  return w;
+}
+function renderRaceResults(){
+  if(!G||G.spec.mode!=='race')return;
+  const rd=G.spec.round;const res=MP.results[rd]||{};
+  const live=mpPeers();
+  const rows=[];const seen=new Set();
+  for(const pid in res){const r=res[pid];const p=live.find(x=>(r.me&&x.sameTab)||x.peer===pid);
+    rows.push({nick:r.nick,ms:r.ms,me:r.me,col:p?mpColor(p):'#6b7190'});if(p)seen.add(p.peer);}
+  for(const p of live){if(seen.has(p.peer)||p.sameTab&&rows.some(r=>r.me))continue;
+    const pr=p.presence;if(mpNum(pr.rd,0)!==rd||pr.st!=='race')continue;
+    rows.push({nick:mpStr(pr.nick,'Spieler'),run:true,pl:mpNum(pr.pl,0),tot:mpNum(pr.tot,0),me:!!p.sameTab,col:mpColor(p)});}
+  rows.sort((a,b)=>(a.run?1:0)-(b.run?1:0)||(a.run?(b.pl/(b.tot||1))-(a.pl/(a.tot||1)):a.ms-b.ms));
+  const list=$('raceList');list.innerHTML='';
+  rows.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='res'+(r.me?' me':'')+(!r.run&&i===0?' first':'');
+    const pl=document.createElement('span');pl.className='pl';pl.textContent=r.run?'…':(i===0?'🏆':String(i+1));
+    const who=document.createElement('span');who.className='who';
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=r.col;
+    const nm=document.createElement('span');nm.textContent=r.nick+(r.me?' (du)':'');who.append(dot,nm);
+    const tm=document.createElement('span');tm.className='tm'+(r.run?' run':'');tm.textContent=r.run?('spielt · '+r.pl+'/'+r.tot):fmt(r.ms/1000)+'.'+String(Math.floor(r.ms%1000/100));
+    d.append(pl,who,tm);list.appendChild(d);
+  });
+  const myIdx=rows.findIndex(r=>r.me&&!r.run);
+  const running=rows.filter(r=>r.run).length;
+  $('raceTitle').textContent=myIdx===0?'Gewonnen! 🏆':'Platz '+(myIdx+1);
+  $('raceSub').textContent='Runde '+rd+(running?' · '+running+' spielen noch':' · alle fertig');
+  const host=mpIsHost();
+  $('raceNext').hidden=!host;
+  $('raceNext').textContent='Nächste Runde starten';
+}
+function renderRaceBar(){
+  const bar=$('raceBar');
+  if(!G||G.spec.mode!=='race'||!MP.R){bar.hidden=true;return;}
+  bar.hidden=false;bar.innerHTML='';
+  for(const p of mpPeers()){
+    const pr=p.presence;const inRound=mpNum(pr.rd,0)===G.spec.round&&(pr.st==='race'||pr.st==='done');
+    if(!inRound&&!p.sameTab)continue;
+    const c=document.createElement('div');c.className='rc'+(p.sameTab?' me':'');
+    const col=mpColor(p);
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=col;
+    const nm=document.createElement('span');nm.className='nm';nm.textContent=p.sameTab?'Du':mpStr(pr.nick,'Spieler');
+    c.append(dot,nm);
+    if(pr.st==='done'&&typeof pr.ms==='number'){const ok=document.createElement('span');ok.className='ok';ok.textContent='✓ '+fmt(pr.ms/1000);c.append(ok);}
+    else{const pb=document.createElement('span');pb.className='pb';const fill=document.createElement('i');fill.style.background=col;
+      const tot=mpNum(pr.tot,0)||1;fill.style.width=Math.min(100,mpNum(pr.pl,0)/tot*100)+'%';pb.append(fill);c.append(pb);}
+    bar.appendChild(c);
+  }
+}
+function renderMp(){
+  const note=$('mpNote');
+  const inLobby=!!MP.R;
+  $('mpJoin').hidden=inLobby;$('mpLobby').hidden=!inLobby;
+  if(MP.ready&&!MP.ns){
+    note.hidden=false;
+    note.textContent=(window.claude?'Hier ist keine Verbindung zu anderen Spielern möglich. Mehrspieler funktioniert, wenn du angemeldet bist und Hexora direkt in Claude öffnest.':'Mehrspieler gibt es nur in der Version von Hexora, die du in Claude öffnest. In dieser Datei bzw. App ist er nicht verfügbar.');
+    $('mpCreate').disabled=$('mpJoinBtn').disabled=true;
+  }else{note.hidden=true;if(!inLobby)$('mpCreate').disabled=$('mpJoinBtn').disabled=!MP.ready;}
+  const conn=$('mpConn');const on=!!(MP.R&&MP.R.connected&&MP.R.connected());
+  conn.classList.toggle('on',on);conn.querySelector('span').textContent=inLobby?(on?'verbunden':'verbinde …'):(MP.ns?'bereit':'offline');
+  if(!inLobby)return;
+  // code
+  const cs=$('mpCodeShow');if(cs.dataset.code!==MP.code){cs.dataset.code=MP.code;cs.innerHTML='';for(const ch of MP.code){const b=document.createElement('b');b.textContent=ch;cs.appendChild(b);}}
+  const ps=mpPeers().slice(0,MPMAX);const wins=mpWins();const host=mpIsHost();
+  $('mpCount').textContent='Spieler '+ps.length+'/'+MPMAX;
+  const slots=$('mpSlots');slots.innerHTML='';
+  ps.forEach((p,i)=>{
+    const pr=p.presence;const d=document.createElement('div');d.className='mp-slot';
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=dot.style.color=MPCOLS[i];
+    const nm=document.createElement('span');nm.className='nm';nm.textContent=mpStr(pr.nick,'Spieler')+(p.sameTab?' (du)':'');
+    d.append(dot,nm);
+    const w=wins[p.sameTab?'__me':p.peer];if(w){const ws=document.createElement('span');ws.className='wins';ws.textContent='🏆 '+w;d.append(ws);}
+    if(pr.st==='race'){const t=document.createElement('span');t.className='tag2';t.textContent='spielt';d.append(t);}
+    if(i===0){const t=document.createElement('span');t.className='tag2 host';t.textContent='Host';d.append(t);}
+    slots.appendChild(d);
+  });
+  for(let i=ps.length;i<MPMAX;i++){const d=document.createElement('div');d.className='mp-slot empty';d.textContent='Freier Platz';slots.appendChild(d);}
+  const hostP=ps[0];const diff=hostP?mpNum(hostP.presence.diff,0.42):0.42;
+  document.querySelectorAll('#mpDiffs button').forEach(b=>{b.classList.toggle('on',Math.abs(+b.dataset.d-diff)<.01);b.disabled=!host;});
+  $('mpStart').hidden=!host;$('mpWait').hidden=host;
+}
+$('btnMp').onclick=()=>{show('mp');renderMp();};
+$('mpBack').onclick=()=>show('menu');
+$('mpCreate').onclick=()=>{ac();mpEnter(mpCode(),true);};
+$('mpJoinBtn').onclick=()=>{
+  const c=$('mpCodeIn').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(c.length!==4){toast('Der Code hat 4 Zeichen');return;}
+  ac();mpEnter(c,false);
+};
+$('mpCodeIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('mpJoinBtn').click();});
+$('mpLeave').onclick=()=>{mpLeave();};
+$('mpCopy').onclick=()=>{
+  const txt=MP.code||'';
+  try{navigator.clipboard.writeText(txt).then(()=>toast('Code '+txt+' kopiert'),()=>toast('Code: '+txt));}catch(e){toast('Code: '+txt);}
+};
+document.querySelectorAll('#mpDiffs button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({diff:+b.dataset.d});renderMp();}});
+$('mpStart').onclick=()=>{ac();mpStartRound();};
+$('raceNext').onclick=()=>mpStartRound();
+$('raceLobby').onclick=()=>{G=null;mpLeaveRace();show('mp');};
+
 /* ---------- boot ---------- */
 buildCatalog();
 refreshMenu();
 startHero();
 if(!save.seenHelp){save.seenHelp=true;persist();setTimeout(()=>openOv('helpOv'),600);}
-window.__hex={getLevel,makeLevel,CATALOG,get G(){return G;},startLevel:s=>startLevel(s),hint};
+window.__hex={getLevel,makeLevel,CATALOG,get G(){return G;},startLevel:s=>startLevel(s),hint,checkWin:()=>checkWin()};
 })();
 </script>
 
