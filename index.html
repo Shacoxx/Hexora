@@ -337,7 +337,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
       <div class="menu-btns">
         <button class="btn primary" id="btnContinue">Spielen <small id="contLbl">Level 1</small></button>
         <button class="btn" id="btnLevels">Levelauswahl <small>6 Stufen</small></button>
-        <button class="btn" id="btnMp">Mehrspieler <small>bis 5 Spieler</small></button>
+        <button class="btn" id="btnMp">Mehrspieler <small>mit Freunden</small></button>
         <div class="menu-row">
           <button class="btn" id="btnDaily">Tägliche Challenge <small id="dailyLbl">heute</small></button>
           <button class="btn" id="btnRandom">Zufallspuzzle <small>endlos</small></button>
@@ -390,7 +390,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
             <p>Deine Freunde öffnen Hexora hier in Claude, tippen auf <b>Mehrspieler</b> und geben den Code ein.</p>
           </div>
           <div class="mp-card">
-            <h3 id="mpCount">Spieler 1/5</h3>
+            <h3 id="mpCount">Spieler: 1</h3>
             <div class="mp-slots" id="mpSlots"></div>
           </div>
           <div class="mp-card">
@@ -1612,8 +1612,8 @@ renderMusic();
    - the host (first in join order) also: current round number, seed, difficulty
    Each client starts a round when it sees the host's round number go up.
    ===================================================================== */
-const MPMAX=5;
-const MPCOLS=['#39e27d','#ffd12e','#ff4d5e','#b04dff','#2fb8ff'];
+// no player limit; colours repeat after 12 players
+const MPCOLS=['#39e27d','#ffd12e','#ff4d5e','#b04dff','#2fb8ff','#ff8a2a','#27e0c2','#ff3ea5','#b8f53a','#5aa9ff','#ff9ed2','#8f5bff'];
 const MP={roul:null,roulSv:new Set(),roulScore:{},roulWins:{},resMode:'race',ns:null,ready:false,R:null,code:null,mine:{},lastRound:null,results:{},seenDone:new Set(),unsub:null,unconn:null,named:false};
 const mpNum=(v,d)=>typeof v==='number'&&isFinite(v)?v:d;
 const mpStr=(v,d)=>typeof v==='string'?v.slice(0,14):d;
@@ -1656,8 +1656,7 @@ async function mpEnter(code,create){
   if(!create)setTimeout(()=>{
     if(!MP.R||MP.code!==code)return;
     const ps=mpPeers();const i=ps.findIndex(p=>p.sameTab);
-    if(i>=MPMAX){toast('Diese Lobby ist voll ('+MPMAX+'/'+MPMAX+')');mpLeave();}
-    else if(ps.length===1)toast('Noch niemand hier. Stimmt der Code '+code+'?');
+    if(ps.length===1)toast('Noch niemand hier. Stimmt der Code '+code+'?');
   },2500);
 }
 function mpLeave(){
@@ -1726,7 +1725,7 @@ function mpStartRound(){
   const round=Math.max(MP.lastRound||0,mpNum(MP.mine.hr,0))+1;
   const seed=1+Math.floor(Math.random()*1e9);
   const md=MP.mine.md==='roul'?'roul':'race';
-  const order=mpPeers().slice(0,MPMAX).map(p=>p.peer);
+  const order=mpPeers().map(p=>p.peer);
   mpSet({hr:round,seed,ro:order,rend:0});
   mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order);
 }
@@ -1809,12 +1808,12 @@ function renderMp(){
   if(!inLobby)return;
   // code
   const cs=$('mpCodeShow');if(cs.dataset.code!==MP.code){cs.dataset.code=MP.code;cs.innerHTML='';for(const ch of MP.code){const b=document.createElement('b');b.textContent=ch;cs.appendChild(b);}}
-  const ps=mpPeers().slice(0,MPMAX);const wins=mpWins();const host=mpIsHost();
-  $('mpCount').textContent='Spieler '+ps.length+'/'+MPMAX;
+  const ps=mpPeers();const wins=mpWins();const host=mpIsHost();
+  $('mpCount').textContent='Spieler: '+ps.length;
   const slots=$('mpSlots');slots.innerHTML='';
   ps.forEach((p,i)=>{
     const pr=p.presence;const d=document.createElement('div');d.className='mp-slot';
-    const dot=document.createElement('i');dot.className='dot';dot.style.background=dot.style.color=MPCOLS[i];
+    const dot=document.createElement('i');dot.className='dot';dot.style.background=dot.style.color=MPCOLS[i%MPCOLS.length];
     const nm=document.createElement('span');nm.className='nm';nm.textContent=mpStr(pr.nick,'Spieler')+(p.sameTab?' (du)':'');
     d.append(dot,nm);
     const w=wins[p.sameTab?'__me':p.peer];if(w){const ws=document.createElement('span');ws.className='wins';ws.textContent='🏆 '+w;d.append(ws);}
@@ -1822,7 +1821,7 @@ function renderMp(){
     if(i===0){const t=document.createElement('span');t.className='tag2 host';t.textContent='Host';d.append(t);}
     slots.appendChild(d);
   });
-  for(let i=ps.length;i<MPMAX;i++){const d=document.createElement('div');d.className='mp-slot empty';d.textContent='Freier Platz';slots.appendChild(d);}
+  {const d=document.createElement('div');d.className='mp-slot empty';d.textContent='Weitere Spieler können jederzeit mit dem Code beitreten';slots.appendChild(d);}
   const hostP=ps[0];const diff=hostP?mpNum(hostP.presence.diff,0.42):0.42;
   document.querySelectorAll('#mpDiffs button').forEach(b=>{b.classList.toggle('on',Math.abs(+b.dataset.d-diff)<.01);b.disabled=!host;});
   const md=hostP&&hostP.presence.md==='roul'?'roul':'race';
