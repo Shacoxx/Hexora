@@ -329,6 +329,15 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
 .mp-lead button:disabled{opacity:.35;cursor:default}
 .mp-lead output{flex:1;text-align:center;font-family:var(--font-display);font-size:22px;color:var(--prism-4);font-variant-numeric:tabular-nums}
 .mp-lead output small{display:block;font-family:var(--font-body);font-size:12px;color:var(--muted);font-weight:500}
+.mp-wins{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mp-wins button{border:1px solid var(--line);background:var(--ink-3);border-radius:12px;padding:10px 6px;font-size:13px;font-weight:700;display:grid;gap:2px}
+.mp-wins button small{font-size:11px;font-weight:500;color:var(--muted)}
+.mp-wins button.on{border-color:var(--prism-4);color:var(--prism-4);background:color-mix(in srgb,var(--prism-4) 12%,var(--ink-3))}
+.mp-wins button:disabled{cursor:default}
+.mp-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mp-quick button{border:1px solid var(--line);background:var(--ink-3);border-radius:10px;padding:7px 4px;font-size:13px;font-weight:700}
+.mp-quick button.on{border-color:var(--prism-4);color:var(--prism-4)}
+.mp-quick button:disabled{cursor:default;opacity:.6}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-10px);opacity:0;z-index:40;background:var(--ink-3);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;transition:all .25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
@@ -427,7 +436,7 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
             <h3>Modus</h3>
             <div class="mp-modes" id="mpModes">
               <button data-m="race"><b>Rennen</b><span>Alle bekommen dasselbe Rätsel. Die schnellste Zeit gewinnt.</span></button>
-              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Nach einer einstellbaren Zeit wandern die Bretter weiter und die Teile fallen raus. Wer den eingestellten Vorsprung an gelösten Rätseln hat, gewinnt.</span></button>
+              <button data-m="roul"><b>Roulette</b><span>Jeder startet mit eigenem Brett. Nach einer einstellbaren Zeit wandern die Bretter weiter und die Teile fallen raus. Gewonnen wird mit Vorsprung oder wer zuerst eine Zielanzahl an Rätseln löst.</span></button>
               <button data-m="team"><b>Team-Roulette</b><span>Wie Roulette, aber in Teams. Jeder wählt neben seinem Namen eines von 6 Teams. Die gelösten Rätsel werden pro Team zusammengezählt.</span></button>
             </div>
             <div id="mpSwapBox" hidden style="display:grid;gap:10px">
@@ -435,11 +444,19 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
               <div class="mp-swaps" id="mpSwaps">
                 <button data-s="60000">1 Min</button><button data-s="120000">2 Min</button><button data-s="180000">3 Min</button><button data-s="300000">5 Min</button>
               </div>
-              <h3>Sieg bei Vorsprung von</h3>
+              <h3>Siegbedingung</h3>
+              <div class="mp-wins" id="mpWins">
+                <button data-w="lead">Vorsprung<small>X Rätsel mehr als der Zweite</small></button>
+                <button data-w="goal">Zielanzahl<small>wer zuerst X Rätsel löst</small></button>
+              </div>
+              <h3 id="mpLeadH">Sieg bei Vorsprung von</h3>
+              <div class="mp-quick" id="mpGoalQuick" hidden>
+                <button data-g="5">5</button><button data-g="10">10</button><button data-g="20">20</button><button data-g="30">30</button>
+              </div>
               <div class="mp-lead">
-                <button id="mpLeadMinus" aria-label="Weniger Vorsprung">−</button>
+                <button id="mpLeadMinus" aria-label="Weniger">−</button>
                 <output id="mpLeadVal">3<small>Rätseln</small></output>
-                <button id="mpLeadPlus" aria-label="Mehr Vorsprung">+</button>
+                <button id="mpLeadPlus" aria-label="Mehr">+</button>
               </div>
             </div>
             <h3>Schwierigkeit</h3>
@@ -1775,7 +1792,7 @@ async function mpEnter(code,create){
   MP.R=R;MP.named=named;MP.code=code;MP.results={};MP.seenDone=new Set();
   MP.lastRound=create?0:null;
   MP.mine={};
-  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',at:'lobby',hr:0,diff:0.42,md:'race',sw:120000,ld:3,team:teamOk(save.team)?save.team:null,seed:0,rd:0,pl:0,tot:0,ms:null,mv:0,sv:[]});
+  mpSet({lobby:code,nick,rank:create?0:1,since:Date.now(),st:'lobby',at:'lobby',hr:0,diff:0.42,md:'race',sw:120000,ld:3,wc:'lead',gl:10,team:teamOk(save.team)?save.team:null,seed:0,rd:0,pl:0,tot:0,ms:null,mv:0,sv:[]});
   MP.unsub=R.onPeers(mpOnPeers,()=>{toast('Verbindung zur Lobby verloren');mpLeave();});
   MP.unconn=R.onConnection?R.onConnection(()=>renderMp()):null;
   $('mpCreate').disabled=$('mpJoinBtn').disabled=false;
@@ -1820,7 +1837,7 @@ function mpOnPeers(){
   if(host&&host.presence){
     const hp=host.presence;const hr=mpNum(hp.hr,0);
     if(MP.lastRound===null){if(!host.sameTab)MP.lastRound=hr;} // joined: skip a round already under way, wait for the next
-    else if(hr>MP.lastRound&&hp.seed){mpBegin(hr,hp.seed,mpNum(hp.diff,0.42),hp.md==='roul'||hp.md==='team'?hp.md:'race',Array.isArray(hp.ro)?hp.ro:[],Array.isArray(hp.tm)?hp.tm:null,mpNum(hp.sw,120000),leadOk(hp.ld));}
+    else if(hr>MP.lastRound&&hp.seed){mpBegin(hr,hp.seed,mpNum(hp.diff,0.42),hp.md==='roul'||hp.md==='team'?hp.md:'race',Array.isArray(hp.ro)?hp.ro:[],Array.isArray(hp.tm)?hp.tm:null,mpNum(hp.sw,120000),leadOk(hp.ld),winOk(hp.wc),goalOk(hp.gl));}
     if(MP.roul&&!MP.roul.ended&&mpNum(hp.rend,0)===MP.roul.round)roulEnd();
   }
   renderMp();renderRaceBar();
@@ -1837,9 +1854,9 @@ function runCountdown(onGo){
     if(i===3){g.locked=false;g.t0=performance.now();if(onGo)onGo();setTimeout(()=>{if(G===g)cd.innerHTML='';},800);}
   },i*800));
 }
-function mpBegin(round,seed,t,md,order,teams,swap,lead){
+function mpBegin(round,seed,t,md,order,teams,swap,lead,win,goal){
   MP.lastRound=round;
-  if(md==='roul'||md==='team'){roulBegin(round,seed,t,order||[],md==='team'?teams:null,swap,lead);return;}
+  if(md==='roul'||md==='team'){roulBegin(round,seed,t,order||[],md==='team'?teams:null,swap,lead,win,goal);return;}
   roulStop();
   closeOv('raceOv');closeOv('winOv');MP.resMode='race';
   startLevel({mode:'race',seed:seed|0,t,round});
@@ -1860,9 +1877,9 @@ function mpStartRound(){
     const chk=mpTeamCheck();if(chk){toast(chk);return;}
     teams=mpPeers().slice(0,MPMAX).map(p=>p.presence.team);
   }
-  const sw=mpNum(MP.mine.sw,120000);const ld=leadOk(MP.mine.ld);
-  mpSet({hr:round,seed,ro:order,tm:teams,sw,ld,rend:0});
-  mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order,teams,sw,ld);
+  const sw=mpNum(MP.mine.sw,120000);const ld=leadOk(MP.mine.ld);const wc=winOk(MP.mine.wc);const gl=goalOk(MP.mine.gl);
+  mpSet({hr:round,seed,ro:order,tm:teams,sw,ld,wc,gl,rend:0});
+  mpBegin(round,seed,mpNum(MP.mine.diff,0.42),md,order,teams,sw,ld,wc,gl);
 }
 function mpFinished(){
   const ms=Math.round(G.elapsed*1000);
@@ -1995,9 +2012,15 @@ function renderMp(){
   $('mpSwapBox').hidden=md==='race';
   const sw=hostP?mpNum(hostP.presence.sw,120000):120000;
   document.querySelectorAll('#mpSwaps button').forEach(b=>{b.classList.toggle('on',+b.dataset.s===sw);b.disabled=!host;});
-  const ld=hostP?leadOk(hostP.presence.ld):LEAD;
-  $('mpLeadVal').innerHTML='';$('mpLeadVal').append(String(ld));{const sm=document.createElement('small');sm.textContent=ld===1?'Rätsel':'Rätseln';$('mpLeadVal').append(sm);}
-  $('mpLeadMinus').disabled=!host||ld<=1;$('mpLeadPlus').disabled=!host||ld>=10;
+  const wc=hostP?winOk(hostP.presence.wc):'lead';
+  document.querySelectorAll('#mpWins button').forEach(b=>{b.classList.toggle('on',b.dataset.w===wc);b.disabled=!host;});
+  const isGoal=wc==='goal';
+  const val=isGoal?(hostP?goalOk(hostP.presence.gl):GOAL):(hostP?leadOk(hostP.presence.ld):LEAD);
+  $('mpLeadH').textContent=isGoal?'Sieg bei':'Sieg bei Vorsprung von';
+  $('mpGoalQuick').hidden=!isGoal;
+  document.querySelectorAll('#mpGoalQuick button').forEach(b=>{b.classList.toggle('on',+b.dataset.g===val);b.disabled=!host;});
+  $('mpLeadVal').innerHTML='';$('mpLeadVal').append(String(val));{const sm=document.createElement('small');sm.textContent=(val===1?'Rätsel':'Rätseln')+(isGoal?' gelöst':'');$('mpLeadVal').append(sm);}
+  $('mpLeadMinus').disabled=!host||val<=1;$('mpLeadPlus').disabled=!host||val>=(isGoal?50:10);
   $('mpStart').hidden=!host;$('mpWait').hidden=host;
 }
 
@@ -2008,6 +2031,9 @@ function renderMp(){
 const SWAP=window.__HX_SWAP||120000; // 2 minutes
 const LEAD=3; // default lead over the runner-up that wins the roulette; the host can pick 1-10
 const leadOk=v=>Math.max(1,Math.min(10,Math.round(mpNum(v,LEAD))));
+const GOAL=10; // default target for the "first to X boards" win
+const goalOk=v=>Math.max(1,Math.min(50,Math.round(mpNum(v,GOAL))));
+const winOk=v=>v==='goal'?'goal':'lead';
 function roulSeed(base,slot,gen){return ((Math.imul(base|0,31)+slot*1000003+gen*1299709)>>>0)%999999937+1;}
 function roulGen(round,slot){let n=0;const pre=round+':'+slot+':';for(const k of MP.roulSv)if(k.startsWith(pre))n++;return n;}
 const TEAMS=[{name:'Gelb',col:'#ffd12e'},{name:'Blau',col:'#2fb8ff'},{name:'Rot',col:'#ff4d5e'},{name:'Grün',col:'#39e27d'},{name:'Lila',col:'#b04dff'},{name:'Orange',col:'#ff8a2a'}];
@@ -2033,6 +2059,17 @@ function roulCollect(ps){
 }
 function roulCheckLead(){
   const R=MP.roul;if(!R||R.ended||!R.start)return;
+  if(R.winMode==='goal'){ // first to reach the target count wins (team: summed)
+    const ranked=R.teams?roulTeamSums().filter(x=>x.active).sort((x,y)=>(y.n-x.n)||(x.mv-y.mv)):roulRows();
+    if(!ranked.length)return;
+    const top=ranked[0];
+    if(top.n>=R.goal){R.goalWin=true;if(mpIsHost())mpSet({rend:R.round});roulEnd();return;}
+    const sig=(R.teams?top.t:top.key)+':'+top.n;
+    if(R.goal>1&&top.n===R.goal-1&&R.warnedLead!==sig){R.warnedLead=sig;
+      if(R.teams)toast(top.t===R.myTeam?'Noch 1 Rätsel, dann gewinnt dein Team!':'Team '+TEAMS[top.t].name+' fehlt nur noch 1 Rätsel!');
+      else toast(top.me?'Noch 1 Rätsel, dann hast du gewonnen!':top.nick+' fehlt nur noch 1 Rätsel zum Sieg!');}
+    return;
+  }
   if(R.teams){ // team roulette: the summed scores decide
     const ranked=roulTeamSums().filter(x=>x.active).sort((x,y)=>(y.n-x.n)||(x.mv-y.mv));
     if(ranked.length<2)return;
@@ -2053,7 +2090,7 @@ function roulCheckLead(){
     toast(rows[0].me?'Noch 1 Rätsel, dann hast du gewonnen!':rows[0].nick+' fehlt nur noch 1 Rätsel zum Sieg!');
   }
 }
-function roulBegin(round,base,t,order,teams,swap,lead){
+function roulBegin(round,base,t,order,teams,swap,lead,win,goal){
   roulStop();
   const me=(MP.R?MP.R.peers():[]).find(p=>p.sameTab);
   const idx=me?order.indexOf(me.peer):-1;
@@ -2062,7 +2099,7 @@ function roulBegin(round,base,t,order,teams,swap,lead){
   MP.roulScore={};
   const tms=Array.isArray(teams)&&teams.length===order.length?teams.map(x=>teamOk(x)?x:0):null;
   const R=MP.roul={round,base,t,order,n:order.length,idx,epoch:0,start:0,moves:0,solved:[],ended:false,warned:-1,ticked:-1,
-    swap:Math.max(20000,Math.min(600000,swap||SWAP)),lead:leadOk(lead),
+    swap:Math.max(20000,Math.min(600000,swap||SWAP)),lead:leadOk(lead),winMode:winOk(win),goal:goalOk(goal),
     teams:tms,myPeer:me.peer,myTeam:tms?tms[idx]:null};
   if(tms)setTimeout(()=>toast('Du bist in Team '+TEAMS[R.myTeam].name+'!'),300);
   mpSet({st:'roul',rd:round,sv:[],mv:0,pl:0,tot:0,ms:null});
@@ -2152,7 +2189,7 @@ function renderRoulResults(){
     });
     const won=R.winTeam===R.myTeam;
     $('raceTitle').textContent=R.winTeam==null?'Unentschieden':won?'Dein Team gewinnt! 🏆':'Team '+TEAMS[R.winTeam].name+' gewinnt';
-    $('raceSub').textContent='Team-Roulette · Runde '+(R.round||'')+(R.leadWin?' · Sieg mit '+R.lead+(R.lead===1?' Rätsel':' Rätseln')+' Vorsprung':' · bei Gleichstand zählen weniger Züge');
+    $('raceSub').textContent='Team-Roulette · Runde '+(R.round||'')+(R.goalWin?' · Ziel von '+R.goal+(R.goal===1?' Rätsel':' Rätseln')+' erreicht':R.leadWin?' · Sieg mit '+R.lead+(R.lead===1?' Rätsel':' Rätseln')+' Vorsprung':' · bei Gleichstand zählen weniger Züge');
     $('raceNext').hidden=!mpIsHost();$('raceNext').textContent='Neue Runde starten';
     return;
   }
@@ -2167,7 +2204,7 @@ function renderRoulResults(){
   });
   const my=rows.findIndex(r=>r.me);
   $('raceTitle').textContent=my===0&&rows[0].n>0?'Gewonnen! 🏆':'Platz '+(my+1);
-  $('raceSub').textContent='Roulette · Runde '+(R.round||'')+(R.leadWin?' · Sieg mit '+R.lead+(R.lead===1?' Rätsel':' Rätseln')+' Vorsprung':' · bei Gleichstand zählen weniger Züge');
+  $('raceSub').textContent='Roulette · Runde '+(R.round||'')+(R.goalWin?' · Ziel von '+R.goal+(R.goal===1?' Rätsel':' Rätseln')+' erreicht':R.leadWin?' · Sieg mit '+R.lead+(R.lead===1?' Rätsel':' Rätseln')+' Vorsprung':' · bei Gleichstand zählen weniger Züge');
   $('raceNext').hidden=!mpIsHost();$('raceNext').textContent='Neue Runde starten';
 }
 function renderRoulBar(){
@@ -2212,8 +2249,12 @@ $('mpCopy').onclick=()=>{
 };
 document.querySelectorAll('#mpModes button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({md:b.dataset.m});renderMp();}});
 
-$('mpLeadMinus').onclick=()=>{if(mpIsHost()){mpSet({ld:leadOk(leadOk(MP.mine.ld)-1)});renderMp();}};
-$('mpLeadPlus').onclick=()=>{if(mpIsHost()){mpSet({ld:leadOk(leadOk(MP.mine.ld)+1)});renderMp();}};
+function mpStep(d){if(!mpIsHost())return;
+  if(winOk(MP.mine.wc)==='goal')mpSet({gl:goalOk(goalOk(MP.mine.gl)+d)});else mpSet({ld:leadOk(leadOk(MP.mine.ld)+d)});renderMp();}
+$('mpLeadMinus').onclick=()=>mpStep(-1);
+$('mpLeadPlus').onclick=()=>mpStep(1);
+document.querySelectorAll('#mpWins button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({wc:b.dataset.w});renderMp();}});
+document.querySelectorAll('#mpGoalQuick button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({gl:goalOk(+b.dataset.g)});renderMp();}});
 document.querySelectorAll('#mpSwaps button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({sw:+b.dataset.s});renderMp();}});
 document.querySelectorAll('#mpDiffs button').forEach(b=>b.onclick=()=>{if(mpIsHost()){mpSet({diff:+b.dataset.d});renderMp();}});
 $('mpStart').onclick=()=>{ac();mpStartRound();};
