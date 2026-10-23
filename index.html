@@ -501,6 +501,18 @@ input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4
   </div>
 </div>
 
+<!-- LEAVE GAME? -->
+<div class="overlay" id="quitOv" role="dialog" aria-modal="true" aria-labelledby="quitTitle">
+  <div class="card">
+    <h2 id="quitTitle">Spiel verlassen?</h2>
+    <p style="text-align:center" id="quitText">Dein Fortschritt in diesem Rätsel geht verloren.</p>
+    <div class="btns" style="margin-top:16px">
+      <button class="btn primary" id="quitStay" style="justify-content:center">Weiterspielen</button>
+      <button class="btn" id="quitLeave" style="justify-content:center">Ja, verlassen</button>
+    </div>
+  </div>
+</div>
+
 <!-- WIN -->
 <div class="overlay" id="winOv" role="dialog" aria-modal="true">
   <div class="card">
@@ -1035,13 +1047,15 @@ function drawBoardPlate(c,bg,s,glow='rgba(90,120,255,.22)'){
 const $=id=>document.getElementById(id);
 let current='menu';
 function show(id){
+  // leaving the game screen: drop the history entry the game pushed, so the device back button stays in step
+  if(current==='game'&&id!=='game'){try{if(history.state&&history.state.hx==='game'){ignorePop=true;history.back();}}catch(e){}}
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
   current=id;
   // tell the lobby where I am: in the lobby, in a game, or somewhere else in the app
   if(typeof MP!=='undefined'&&MP.R){const at=id==='mp'?'lobby':(id==='game'&&G&&(G.spec.mode==='race'||G.spec.mode==='roul')?'game':'away');if(MP.mine.at!==at)mpSet({at});}
   if(id==='menu'){refreshMenu();startHero();}else stopHero();
   if(id==='levels')renderLevels();
-  if(id==='game'){requestAnimationFrame(()=>{layout();});}
+  if(id==='game'){requestAnimationFrame(()=>{layout();});try{if(!(history.state&&history.state.hx==='game'))history.pushState({hx:'game'},'');}catch(e){}}
 }
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800);}
 function openOv(id){$(id).classList.add('show');}
@@ -1273,7 +1287,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='e'||e.key==='ArrowLeft'){rotatePiece(id,-1);e.preventDefault();}
   else if(k==='f'){flipPiece(id);}
   else if(k==='h'&&G.spec.mode!=='race'&&G.spec.mode!=='roul'){hint();}
-  else if(e.key==='Escape'){$('gBack').click();}
+  else if(e.key==='Escape'){if($('quitOv').classList.contains('show'))closeOv('quitOv');else $('gBack').click();}
 });
 
 function checkWin(){
@@ -1610,7 +1624,30 @@ new ResizeObserver(()=>{if(current==='menu'){hero=null;buildHero();}}).observe(h
 // remember where the player came from, so "back" returns there
 const _start=startLevel;
 startLevel=function(spec){lastMenu=(spec.mode==='race'||spec.mode==='roul')?'mp':(current==='levels'?'levels':(current==='game'?lastMenu:'menu'));_start(spec);};
-$('gBack').onclick=()=>{const race=G&&(G.spec.mode==='race'||G.spec.mode==='roul');G=null;if(race&&typeof mpLeaveRace==='function')mpLeaveRace();show(lastMenu);};
+function leaveGame(){
+  closeOv('quitOv');
+  const race=G&&(G.spec.mode==='race'||G.spec.mode==='roul');G=null;if(race&&typeof mpLeaveRace==='function')mpLeaveRace();
+  show(lastMenu);
+}
+// ask only while a puzzle is really in progress (not after it is solved)
+function needsQuitConfirm(){return current==='game'&&!!G&&!G.won;}
+function askQuit(){
+  if(!needsQuitConfirm()){leaveGame();return;}
+  const m=G.spec.mode;
+  $('quitText').textContent=m==='race'?'Du steigst aus dem Rennen aus. Deine Zeit wird nicht gewertet.':m==='roul'?'Du verlässt das Roulette. Bis zur nächsten Runde bist du nicht mehr dabei.':'Dein Fortschritt in diesem Rätsel geht verloren.';
+  openOv('quitOv');
+}
+$('gBack').onclick=askQuit;
+$('quitStay').onclick=()=>closeOv('quitOv');
+$('quitLeave').onclick=leaveGame;
+// device back button / back gesture: the game pushes one history entry and catches it here
+var ignorePop=false;
+addEventListener('popstate',()=>{
+  if(ignorePop){ignorePop=false;return;}
+  if(current!=='game')return;
+  if(needsQuitConfirm()){try{history.pushState({hx:'game'},'');}catch(e){}if(!$('quitOv').classList.contains('show'))askQuit();}
+  else leaveGame();
+});
 
 /* =====================================================================
    MUSIC
